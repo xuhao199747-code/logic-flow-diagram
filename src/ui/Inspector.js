@@ -19,6 +19,41 @@ const statusLabels = {
   partial: "部分完成 · Partial",
 };
 
+const relationReasons = {
+  sequence: {
+    zh: "承接上一环节的结果，继续推进主流程。",
+    en: "Carries the previous result forward through the main flow.",
+  },
+  decision: {
+    zh: "这里存在多条可行路径，需要结合当前上下文作出选择。",
+    en: "Several paths are available, so the current context must guide the choice.",
+  },
+  "parallel-work": {
+    zh: "多个能力彼此独立，可以同时处理并在完成后汇合。",
+    en: "Independent capabilities can work together and rejoin when complete.",
+  },
+  parallel: {
+    zh: "已选择的分支正在并行工作，完成后会统一汇合。",
+    en: "Selected branches run in parallel and rejoin after completion.",
+  },
+  join: {
+    zh: "前面的分支已经返回，需要在这里合并为一个结果。",
+    en: "Returned branch results must be merged into one result here.",
+  },
+  module: {
+    zh: "当前任务需要在这个模块内完成处理，才能继续向后传递。",
+    en: "This module must finish its work before the flow can continue.",
+  },
+  callback: {
+    zh: "当前分支已经得到结果，需要将它送回核心流程。",
+    en: "This branch has produced a result that must return to the core flow.",
+  },
+};
+
+function supportText(zh, en) {
+  return `<span>${zh}</span><small>${en}</small>`;
+}
+
 export function createNodeDetail(graph, selection) {
   const item = selection.type === "executable"
     ? graph.nodes.find((node) => node.id === selection.id) ?? selection
@@ -51,49 +86,41 @@ function bilingualList(items) {
 }
 
 function renderCurrentContent(container, { node, event, snapshot }) {
-  const detailSteps = node?.detailSteps ?? [];
   const issue = snapshot.issue;
   const issueLabel = issue?.label ?? issue;
   const requestAcknowledgement = issue?.requested ? `<p class="issue-ack">确认请求已发送<small>Confirmation requested</small></p>` : "";
   const issueBanner = issue ? `<section class="issue-banner" role="status"><span>模拟异常 · Simulated Issue</span><strong>${issueLabel.zh ?? issue.id}<small>${issueLabel.en ?? ""}</small></strong>${requestAcknowledgement}${issue.description ? `<p>${issue.description.zh}<small>${issue.description.en}</small></p>` : ""}${issue.impact ? `<p>影响：${issue.impact.zh}<small>Impact: ${issue.impact.en}</small></p>` : ""}</section>` : "";
-  container.innerHTML = `<header><span class="rail-eyebrow">CURRENT STEP</span><h2>${event.label.zh}<small>${event.label.en}</small></h2></header>${issueBanner}<dl><dt>状态 <small>Status</small></dt><dd><span class="status-chip">${statusLabels[snapshot.status] ?? snapshot.status}</span></dd><dt>输入 <small>Input</small></dt><dd>${snapshot.input}</dd><dt>输出 <small>Output</small></dt><dd>${snapshot.output}</dd><dt>决策摘要 <small>Decision Summary</small></dt><dd>${snapshot.summary}</dd><dt>轮次 <small>Iteration</small></dt><dd>${snapshot.iteration}</dd></dl><ol class="detail-steps" aria-label="模块内部步骤 Module steps"></ol>`;
-  const steps = container.querySelector(".detail-steps");
-  for (const step of detailSteps) {
-    const item = document.createElement("li");
-    item.innerHTML = `<span>${step.zh}</span><small>${step.en}</small>`;
-    steps.append(item);
-  }
-  steps.hidden = detailSteps.length === 0;
+  const reason = relationReasons[event.relation] ?? relationReasons.sequence;
+  const result = issue
+    ? {
+        zh: `流程在这里遇到「${issueLabel.zh ?? issue.id}」，需要先处理异常。`,
+        en: `The flow encountered “${issueLabel.en ?? issue.id}” and needs attention here.`,
+      }
+    : event.choices
+      ? { zh: "确定一条合适的执行路径。", en: "Select the most suitable execution path." }
+      : { zh: `完成「${event.label.zh}」并形成可继续传递的结果。`, en: `Complete “${event.label.en}” and produce a result for the next stage.` };
+  const next = snapshot.next;
+  container.innerHTML = `<header class="guide-header"><div class="guide-title"><span class="guide-live-dot" aria-hidden="true"></span><strong>运行进度</strong><small>Live Step</small></div><span class="status-chip">${statusLabels[snapshot.status] ?? snapshot.status}</span><h2>${event.label.zh}<small>${event.label.en}</small></h2></header>${issueBanner}<ol class="flow-explanation" aria-label="流程讲解 Flow explanation"><li data-guide-part="now"><span class="guide-index">01</span><div><strong>现在 <small>Now</small></strong><p>${supportText(`${node.label.zh}正在处理这一环节。`, `${node.label.en} is handling this stage.`)}</p></div></li><li data-guide-part="reason"><span class="guide-index">02</span><div><strong>原因 <small>Why</small></strong><p>${supportText(reason.zh, reason.en)}</p></div></li><li data-guide-part="result"><span class="guide-index">03</span><div><strong>结果 <small>Result</small></strong><p>${supportText(result.zh, result.en)}</p></div></li><li data-guide-part="next"><span class="guide-index">04</span><div><strong>下一步 <small>Next</small></strong><p>${supportText(next.zh, next.en)}</p></div></li></ol>`;
 }
 
 function renderNodeContent(container, detail) {
-  container.innerHTML = `<header><span class="rail-eyebrow">NODE DETAIL</span><h2>${detail.label.zh}<small>${detail.label.en}</small></h2></header><dl><dt>所属模块 <small>Module</small></dt><dd>${detail.parentLabel.zh}<small class="block-support">${detail.parentLabel.en}</small></dd><dt>类型 <small>Type</small></dt><dd>${detail.type === "executable" ? "执行节点 · Executable" : "说明节点 · Informative"}</dd>${detail.description ? `<dt>说明 <small>Description</small></dt><dd>${detail.description.zh}<small class="block-support">${detail.description.en}</small></dd>` : ""}</dl><section class="node-connections" aria-label="节点连接 Node connections"><h3>直接连接 <small>Connections</small></h3><div><span>上游 <small>Upstream</small></span>${bilingualList(detail.incoming)}</div><div><span>下游 <small>Downstream</small></span>${bilingualList(detail.outgoing)}</div></section>`;
+  const role = detail.description ?? {
+    zh: `这是「${detail.parentLabel.zh}」中的处理环节，负责完成「${detail.label.zh}」并继续传递结果。`,
+    en: `A stage in “${detail.parentLabel.en}” that completes “${detail.label.en}” and passes its result onward.`,
+  };
+  const connections = detail.incoming.length || detail.outgoing.length
+    ? `<h3>信息流向 <small>Information Flow</small></h3><div><span>接收自 <small>Receives From</small></span>${bilingualList(detail.incoming)}</div><div><span>发送至 <small>Sends To</small></span>${bilingualList(detail.outgoing)}</div>`
+    : `<h3>模块内部步骤 <small>Internal Module Step</small></h3><p class="internal-flow-note">它在当前模块内部参与处理，不单独占用主流程线路。<small>It works inside this module without creating a separate main-flow route.</small></p>`;
+  container.innerHTML = `<header class="guide-header node-guide-header"><button type="button" class="back-to-live" data-action="back-to-live">← 返回运行进度 <small>Back to Live Step</small></button><div class="guide-title"><strong>节点说明</strong><small>Node Guide</small></div><h2>${detail.label.zh}<small>${detail.label.en}</small></h2><p class="selection-hint">你点击了图中的这个节点 <small>You selected this node in the flow</small></p></header><section class="node-role" data-guide-part="role"><span>作用 <small>Purpose</small></span><p>${supportText(role.zh, role.en)}</p></section><section class="node-module" data-guide-part="module"><span>所属模块 <small>Module</small></span><p>${supportText(detail.parentLabel.zh, detail.parentLabel.en)}</p></section><section class="node-connections" aria-label="节点连接 Node connections">${connections}</section>`;
 }
 
 export function renderContextRail(container, { current, nodeDetail, activeTab = "current", onTabChange }) {
   const showNode = activeTab === "node" && nodeDetail;
-  const activeId = showNode ? "node" : "current";
-  container.innerHTML = `<nav class="rail-tabs" role="tablist" aria-label="说明类型 Detail type"><button id="rail-tab-current" type="button" role="tab" data-rail-tab="current" aria-controls="rail-panel" aria-selected="${showNode ? "false" : "true"}" tabindex="${showNode ? "-1" : "0"}">当前步骤 <small>Current</small></button><button id="rail-tab-node" type="button" role="tab" data-rail-tab="node" aria-controls="rail-panel" aria-selected="${showNode ? "true" : "false"}" tabindex="${showNode ? "0" : "-1"}" ${nodeDetail ? "" : "disabled"}>节点详情 <small>Node</small></button></nav><div id="rail-panel" class="rail-content" role="tabpanel" aria-labelledby="rail-tab-${activeId}"></div>`;
+  container.innerHTML = `<div id="rail-panel" class="rail-content" aria-live="polite"></div>`;
   const content = container.querySelector(".rail-content");
   if (showNode) renderNodeContent(content, nodeDetail);
   else renderCurrentContent(content, current);
-  for (const tab of container.querySelectorAll("[data-rail-tab]")) {
-    tab.onclick = () => onTabChange?.(tab.dataset.railTab);
-    tab.onkeydown = (event) => {
-      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-      const enabled = [...container.querySelectorAll("[data-rail-tab]:not(:disabled)")];
-      if (enabled.length < 2) return;
-      event.preventDefault();
-      const currentIndex = enabled.indexOf(event.currentTarget);
-      const target = event.key === "Home"
-        ? enabled[0]
-        : event.key === "End"
-          ? enabled.at(-1)
-          : enabled[(currentIndex + (event.key === "ArrowRight" ? 1 : -1) + enabled.length) % enabled.length];
-      onTabChange?.(target.dataset.railTab);
-      container.querySelector(`[data-rail-tab="${target.dataset.railTab}"]`)?.focus();
-    };
-  }
+  container.querySelector('[data-action="back-to-live"]')?.addEventListener("click", () => onTabChange?.("current"));
 }
 
 export function renderStepRail(container, current) {

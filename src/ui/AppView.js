@@ -60,9 +60,29 @@ export function createAppView(root, handlers) {
       const cursorKey = `${state.run.currentEventId}:${state.run.trace.length}:${state.run.iteration}`;
       if (cursorKey !== lastCursorKey) {
         activeRailTab = "current";
-        inspectedNode = createNodeDetail(state.graph, { id: currentNode.id, type: "executable" });
+        inspectedNode = null;
         lastCursorKey = cursorKey;
       }
+      const nextEvent = currentEvent.next
+        ? state.graph.events.find((item) => item.id === currentEvent.next)
+        : currentEvent.join
+          ? state.graph.events.find((item) => item.id === currentEvent.join)
+          : null;
+      const choiceLabels = Object.values(currentEvent.choices ?? {}).map((choice) => choice.label);
+      const next = choiceLabels.length
+        ? {
+            zh: `等待你选择：${choiceLabels.map((label) => label.zh).join(" / ")}`,
+            en: `Awaiting your choice: ${choiceLabels.map((label) => label.en).join(" / ")}`,
+          }
+        : nextEvent
+          ? {
+              zh: `进入「${nextEvent.label.zh}」`,
+              en: `Continue to “${nextEvent.label.en}”`,
+            }
+          : {
+              zh: "流程在这里完成。",
+              en: "The flow completes here.",
+            };
       currentGraph = state.graph;
       currentRailModel = {
         node: currentNode,
@@ -74,6 +94,7 @@ export function createAppView(root, handlers) {
           summary: currentEvent.label.en,
           iteration: state.run.iteration,
           issue: state.run.simulatedIssue,
+          next,
         },
       };
 

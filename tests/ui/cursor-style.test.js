@@ -78,4 +78,11 @@ describe("Cursor-style neutral interface", () => {
   it("keeps an independent context gate neutral instead of adding a third accent color", () => {
     expect(styles).toMatch(/\.context-gate\.is-independent\s*>\s*rect\s*\{[^}]*stroke:\s*var\(--route\)/s);
   });
+
+  it("presents the right rail as a guided narrative instead of competing tabs", () => {
+    expect(styles).not.toMatch(/\.rail-tabs\s*\{/);
+    expect(styles).toMatch(/\.guide-header\s*\{[^}]*position:\s*relative/s);
+    expect(styles).toMatch(/\.flow-explanation\s*\{[^}]*display:\s*grid/s);
+    expect(styles).toMatch(/\.back-to-live\s*\{[^}]*cursor:\s*pointer/s);
+  });
 });

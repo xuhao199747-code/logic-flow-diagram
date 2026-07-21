@@ -13,7 +13,8 @@ describe("single-file build", () => {
     }
     expect(html).toContain("用户任务");
     expect(html).toContain("最终响应");
-    expect(html).toContain("CURRENT STEP");
+    expect(html).toContain("运行进度");
+    expect(html).toContain("Live Step");
     expect(html).toContain("下一事件 · Next Event");
     expect(html).toContain("重新开始");
     expect(html).toContain("Restart");

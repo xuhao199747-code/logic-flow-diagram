@@ -83,18 +83,16 @@ describe("AppView", () => {
     expect(document.querySelector("[data-testid=breadcrumb]").textContent).toBe("Agent 系统 > 最终响应");
   });
 
-  it("opens the current execution node from Node Detail without requiring a graph click", () => {
+  it("explains the live flow in a single four-part narrative", () => {
     const view = createAppView(document.querySelector("#app"), handlers());
     view.render({ graph: demoGraph, run: createRun(demoGraph, "rag-route"), viewport: createViewport() });
 
-    expect([...document.querySelectorAll("[data-rail-tab]")].map((tab) => tab.dataset.railTab)).toEqual(["current", "node"]);
-    expect(document.querySelector('[data-rail-tab="current"]').getAttribute("aria-selected")).toBe("true");
-    const nodeTab = document.querySelector('[data-rail-tab="node"]');
-    expect(nodeTab.disabled).toBe(false);
-
-    nodeTab.click();
-
-    expect(document.querySelector('[data-rail-tab="node"]').getAttribute("aria-selected")).toBe("true");
+    const rail = document.querySelector(".step-rail");
+    expect(document.querySelector(".rail-tabs")).toBeNull();
+    expect(rail.textContent).toContain("运行进度");
+    expect(rail.textContent).toContain("Live Step");
+    expect([...rail.querySelectorAll("[data-guide-part]")].map((part) => part.dataset.guidePart))
+      .toEqual(["now", "reason", "result", "next"]);
     expect(document.querySelector(".step-rail").textContent).toContain("检索路由");
     expect(document.querySelector(".step-rail").textContent).toContain("Retrieval Routing");
   });
@@ -111,17 +109,19 @@ describe("AppView", () => {
     expect(document.querySelector(".status-chip").textContent).toContain("Paused");
   });
 
-  it("supports arrow-key navigation between enabled inspector tabs", () => {
+  it("returns from a selected node explanation to the live flow", () => {
     const view = createAppView(document.querySelector("#app"), handlers());
     view.render({ graph: demoGraph, run: createRun(demoGraph), viewport: createViewport() });
     document.querySelector('[data-detail-node-id="rag-query"]').dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-    const nodeTab = document.querySelector('[data-rail-tab="node"]');
-    nodeTab.focus();
-    nodeTab.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
+    expect(document.querySelector(".step-rail").textContent).toContain("节点说明");
+    expect(document.querySelector(".step-rail").textContent).toContain("Node Guide");
+    const back = document.querySelector('[data-action="back-to-live"]');
+    expect(back.textContent).toContain("返回运行进度");
+    back.click();
 
-    expect(document.activeElement).toBe(document.querySelector('[data-rail-tab="current"]'));
-    expect(document.querySelector('[data-rail-tab="current"]').getAttribute("aria-selected")).toBe("true");
+    expect(document.querySelector(".step-rail").textContent).toContain("运行进度");
+    expect(document.querySelector('[data-action="back-to-live"]')).toBeNull();
   });
 
   it("opens clicked graph content in Node Detail without changing the execution cursor", () => {
@@ -132,11 +132,22 @@ describe("AppView", () => {
     document.querySelector('[data-detail-node-id="rag-query"]').dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
     expect(run.currentEventId).toBe("rag-route");
-    expect(document.querySelector('[data-rail-tab="node"]').getAttribute("aria-selected")).toBe("true");
+    expect(document.querySelector(".step-rail").textContent).toContain("节点说明");
     expect(document.querySelector(".step-rail").textContent).toContain("Query处理");
     expect(document.querySelector(".step-rail").textContent).toContain("Query Processing");
     expect(document.querySelector(".node-connections").textContent).toContain("大语言模型");
     expect(document.querySelector(".node-connections").textContent).toContain("路由");
+  });
+
+  it("explains detail nodes without direct topology as internal module steps", () => {
+    const view = createAppView(document.querySelector("#app"), handlers());
+    view.render({ graph: demoGraph, run: createRun(demoGraph), viewport: createViewport() });
+
+    document.querySelector('[data-detail-node-id="memory-long-term"]').dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(document.querySelector(".node-connections").textContent).toContain("模块内部步骤");
+    expect(document.querySelector(".node-connections").textContent).toContain("Internal Module Step");
+    expect(document.querySelector(".node-connections").textContent).not.toContain("接收自");
   });
 
   it("returns the rail to Current Step when execution advances", () => {
@@ -144,11 +155,11 @@ describe("AppView", () => {
     const run = createRun(demoGraph, "input-event");
     view.render({ graph: demoGraph, run, viewport: createViewport() });
     document.querySelector('[data-node-id="llm"]').dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    expect(document.querySelector('[data-rail-tab="node"]').getAttribute("aria-selected")).toBe("true");
+    expect(document.querySelector(".step-rail").textContent).toContain("节点说明");
 
     const nextRun = transition(run, { type: "ADVANCE" });
     view.render({ graph: demoGraph, run: nextRun, viewport: createViewport() });
-    expect(document.querySelector('[data-rail-tab="current"]').getAttribute("aria-selected")).toBe("true");
+    expect(document.querySelector(".step-rail").textContent).toContain("运行进度");
     expect(document.querySelector(".step-rail").textContent).toContain("初始化编排");
   });
 
