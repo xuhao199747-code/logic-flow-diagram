@@ -49,7 +49,7 @@ export function renderPlaybackControls(container, model, handlers) {
 
   const blocked = Boolean(run.simulatedIssue);
   const hidePrimary = needsChoice || blocked;
-  container.innerHTML = `<div class="playback"><div class="control-history"><button type="button" data-action="previous" title="上一步（←）" ${run.history.length === 0 ? "disabled" : ""}>← 上一步</button><button type="button" data-action="restart" title="重新开始">重新开始</button></div><div class="control-actions"><div class="decision-options"></div><button type="button" class="primary-action" data-action="primary" title="下一事件（→）" ${hidePrimary ? "hidden" : ""} ${hidePrimary || terminal ? "disabled" : ""}>${primaryLabel}</button><div class="recovery-options"></div></div></div>`;
+  container.innerHTML = `<div class="playback"><div class="control-history"><button type="button" data-action="restart" title="重新开始">重新开始</button><button type="button" data-action="previous" title="上一步（←）" ${run.history.length === 0 ? "disabled" : ""}>← 上一步</button></div><div class="control-actions"><div class="decision-options"></div><button type="button" class="primary-action" data-action="primary" title="下一事件（→）" ${hidePrimary ? "hidden" : ""} ${hidePrimary || terminal ? "disabled" : ""}>${primaryLabel}</button><div class="recovery-options"></div></div></div>`;
 
   const options = container.querySelector(".decision-options");
   for (const [choiceId, choice] of blocked ? [] : Object.entries(event.choices ?? {})) {

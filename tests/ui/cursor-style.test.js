@@ -95,7 +95,7 @@ describe("Cursor-style neutral interface", () => {
 
   it("shows canvas controls over only the graph area and exposes grab feedback", () => {
     expect(styles).toMatch(/\.canvas-controls\s*\{[^}]*position:\s*absolute/s);
-    expect(styles).toMatch(/\.control-history \.canvas-controls\s*\{[^}]*position:\s*static/s);
+    expect(styles).toMatch(/\.control-actions \.canvas-controls\s*\{[^}]*position:\s*static/s);
     expect(styles).toMatch(/\.architecture-graph\.is-pannable\s*\{[^}]*cursor:\s*grab/s);
     expect(styles).toMatch(/\.architecture-graph\.is-panning\s*\{[^}]*cursor:\s*grabbing/s);
   });
@@ -111,5 +111,8 @@ describe("Cursor-style neutral interface", () => {
     expect(styles).toMatch(/\.flow-settings\s*\{[^}]*display:\s*flex/s);
     expect(styles).toMatch(/\.diagram-control\s*\{[^}]*display:\s*flex/s);
     expect(styles).toMatch(/\.diagram-control select\s*\{[^}]*background:\s*var\(--panel\)/s);
+    expect(styles).toMatch(/\.scenario-block\s*\{[^}]*width:\s*auto/s);
+    expect(styles).toMatch(/\.scenario-block\s*\{[^}]*height:\s*auto/s);
+    expect(styles).not.toMatch(/\[data-scenario-summary\]\s*\{/);
   });
 });

@@ -12,10 +12,9 @@ export function createAppView(root, handlers) {
   const diagramTitle = root.querySelector("[data-diagram-title]");
   const scenarioBlock = document.createElement("div");
   scenarioBlock.className = "scenario-block";
-  scenarioBlock.innerHTML = `<div class="scenario-row"><label class="scenario-control">模拟场景<select data-action="scenario" aria-label="选择模拟场景"></select></label><span class="scenario-status" data-scenario-status></span></div><p data-scenario-summary></p>`;
+  scenarioBlock.innerHTML = `<div class="scenario-row"><label class="scenario-control">模拟场景<select data-action="scenario" aria-label="选择模拟场景"></select></label><span class="scenario-status" data-scenario-status></span></div>`;
   const scenario = scenarioBlock.querySelector('[data-action="scenario"]');
   const scenarioStatus = scenarioBlock.querySelector("[data-scenario-status]");
-  const scenarioSummary = scenarioBlock.querySelector("[data-scenario-summary]");
   const controls = document.createElement("div");
   controls.className = "controls-host";
   const runAnnouncement = root.querySelector('[data-testid="run-announcement"]');
@@ -62,7 +61,6 @@ export function createAppView(root, handlers) {
       const simulated = selectedScenario.id !== "normal";
       scenarioStatus.textContent = simulated ? "模拟中" : "正常";
       scenarioStatus.classList.toggle("is-simulated", simulated);
-      scenarioSummary.textContent = selectedScenario.description.zh;
 
       const currentEvent = state.graph.events.find((item) => item.id === state.run.currentEventId);
       const currentNode = state.graph.nodes.find((item) => item.id === currentEvent.nodeId);
@@ -130,8 +128,8 @@ export function createAppView(root, handlers) {
         eventCount: state.graph.events.length,
       }, handlers);
       const canvasControls = graphHost.querySelector(".canvas-controls");
-      const historyControls = controls.querySelector(".control-history");
-      if (canvasControls && historyControls) historyControls.prepend(canvasControls);
+      const actionControls = controls.querySelector(".control-actions");
+      if (canvasControls && actionControls) actionControls.prepend(canvasControls);
     },
   };
 }

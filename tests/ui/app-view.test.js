@@ -196,6 +196,7 @@ describe("AppView", () => {
     const scenarioBlock = graphHost.querySelector(".scenario-block");
     expect(scenarioBlock).not.toBeNull();
     expect(legend.compareDocumentPosition(scenarioBlock) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(scenarioBlock.querySelector("[data-scenario-summary]")).toBeNull();
     expect(scenarioBlock.textContent).not.toMatch(/Simulation|NORMAL|Standard flow/);
     expect([...scenarioBlock.querySelectorAll("option")].every((option) => !option.textContent.includes("·"))).toBe(true);
   });
@@ -290,7 +291,7 @@ describe("AppView", () => {
     expect(document.querySelector('[data-action="play"]')).toBeNull();
     expect(document.querySelector('[data-action="speed"]')).toBeNull();
     expect([...document.querySelectorAll(".controls-host button[data-action]")].map((button) => button.dataset.action))
-      .toEqual(["previous", "restart", "primary"]);
+      .toEqual(["restart", "previous", "primary"]);
   });
 
   it("separates history and contextual actions without a progress block", () => {
@@ -305,15 +306,19 @@ describe("AppView", () => {
     expect(document.querySelector("[data-testid=branch-progress]")).toBeNull();
   });
 
-  it("places canvas zoom beside the left controls on the same bottom row as the event action", () => {
+  it("places canvas zoom immediately before the event action while history stays on the left", () => {
     const view = createAppView(document.querySelector("#app"), handlers());
     view.render({ graph: demoGraph, run: createRun(demoGraph), viewport: createViewport() });
 
     const history = document.querySelector(".control-history");
+    const actions = document.querySelector(".control-actions");
     const zoom = document.querySelector(".canvas-controls");
-    expect(zoom.parentElement).toBe(history);
-    expect(history.firstElementChild).toBe(zoom);
-    expect(document.querySelector(".control-actions").parentElement).toBe(history.parentElement);
+    expect([...history.querySelectorAll("button[data-action]")].map((button) => button.dataset.action))
+      .toEqual(["restart", "previous"]);
+    expect(zoom.parentElement).toBe(actions);
+    expect(actions.firstElementChild).toBe(zoom);
+    expect(actions.querySelector("[data-action=primary]")).not.toBeNull();
+    expect(actions.parentElement).toBe(history.parentElement);
   });
 
   it("replaces next with branch choices at a decision", () => {
@@ -543,13 +548,12 @@ describe("AppView", () => {
     expect(onScenarioChange).toHaveBeenCalledWith("tool-timeout");
   });
 
-  it("shows a concise Chinese-only scenario summary and simulated-state badge", () => {
+  it("shows only the simulated-state badge without a scenario description row", () => {
     const view = createAppView(document.querySelector("#app"), handlers());
     view.render({ graph: demoGraph, run: createRun(demoGraph), viewport: createViewport(), scenarioId: "no-results" });
 
     expect(document.querySelector("[data-scenario-status]").textContent).toContain("模拟中");
-    expect(document.querySelector("[data-scenario-summary]").textContent).toContain("检索结果为空");
-    expect(document.querySelector("[data-scenario-summary]").textContent).not.toContain("Empty retrieval results");
+    expect(document.querySelector("[data-scenario-summary]")).toBeNull();
   });
 
   it("shows issue cause and impact in the right rail", () => {

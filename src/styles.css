@@ -160,7 +160,9 @@ body {
 }
 
 .scenario-block {
-  width: min(420px, 38vw);
+  width: auto;
+  height: auto;
+  flex: 0 0 auto;
   min-width: 0;
   padding-left: 9px;
   border-left: 1px solid var(--line);
@@ -185,15 +187,6 @@ body {
 .scenario-status.is-simulated {
   border-color: var(--warn);
   color: var(--warn);
-}
-
-[data-scenario-summary] {
-  margin: 3px 0 0;
-  overflow: hidden;
-  color: var(--muted);
-  font-size: .58rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 [data-testid="breadcrumb"] {
@@ -907,7 +900,7 @@ body {
   cursor: pointer;
 }
 
-.control-history .canvas-controls {
+.control-actions .canvas-controls {
   position: static;
   right: auto;
   bottom: auto;
