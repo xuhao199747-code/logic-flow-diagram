@@ -100,6 +100,13 @@ describe("Cursor-style neutral interface", () => {
     expect(styles).toMatch(/\.architecture-graph\.is-panning\s*\{[^}]*cursor:\s*grabbing/s);
   });
 
+  it("adds a restrained 24px dot grid behind only the graph canvas", () => {
+    expect(styles).toMatch(/\.graph-host\s*\{[^}]*background-image:\s*radial-gradient/s);
+    expect(styles).toMatch(/\.graph-host\s*\{[^}]*background-size:\s*24px\s+24px/s);
+    expect(styles).toMatch(/\.architecture-graph\s*\{[^}]*background:\s*transparent/s);
+    expect(styles).not.toMatch(/\.step-rail\s*\{[^}]*radial-gradient/s);
+  });
+
   it("lays out diagram and scenario selectors as one compact settings group", () => {
     expect(styles).toMatch(/\.flow-settings\s*\{[^}]*display:\s*flex/s);
     expect(styles).toMatch(/\.diagram-control\s*\{[^}]*display:\s*flex/s);
