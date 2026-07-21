@@ -87,6 +87,8 @@ describe("AppView", () => {
 
     const select = document.querySelector('[data-action="diagram"]');
     expect([...select.options].map((option) => option.value)).toEqual(["agent-execution", "other-flow"]);
+    expect([...select.options].map((option) => option.textContent)).toEqual(["智能代理执行流程", "另一流程"]);
+    expect(document.querySelector(".diagram-control").textContent).not.toContain("Diagram");
     select.value = "other-flow";
     select.dispatchEvent(new Event("change"));
     expect(onDiagramChange).toHaveBeenCalledWith("other-flow");
@@ -173,6 +175,36 @@ describe("AppView", () => {
       .toEqual(["live", "complete", "callback", "issue"]);
     expect(legend.textContent).toContain("运行中");
     expect(legend.textContent).toContain("异常/重试");
+    expect(legend.textContent).not.toContain("Running");
+  });
+
+  it("places the scenario selector after the legend inside the canvas using Chinese-only chrome", () => {
+    const view = createAppView(document.querySelector("#app"), handlers());
+    view.render({ graph: demoGraph, run: createRun(demoGraph), viewport: createViewport(), scenarioId: "normal" });
+
+    const graphHost = document.querySelector(".graph-host");
+    const legend = graphHost.querySelector(".flow-legend");
+    const scenarioBlock = graphHost.querySelector(".scenario-block");
+    expect(scenarioBlock).not.toBeNull();
+    expect(legend.compareDocumentPosition(scenarioBlock) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(scenarioBlock.textContent).not.toMatch(/Simulation|NORMAL|Standard flow/);
+    expect([...scenarioBlock.querySelectorAll("option")].every((option) => !option.textContent.includes("·"))).toBe(true);
+  });
+
+  it("places Chinese-only playback actions inside the canvas and removes footer progress", () => {
+    const view = createAppView(document.querySelector("#app"), handlers());
+    view.render({ graph: demoGraph, run: createRun(demoGraph), viewport: createViewport(), scenarioId: "normal" });
+
+    const graphHost = document.querySelector(".graph-host");
+    const playback = graphHost.querySelector(".playback");
+    expect(playback).not.toBeNull();
+    expect(document.querySelector(".controls-host").parentElement).toBe(graphHost);
+    expect(document.querySelector("[data-testid=run-progress]")).toBeNull();
+    expect(document.querySelector("[data-testid=branch-progress]")).toBeNull();
+    expect(playback.textContent).toContain("上一步");
+    expect(playback.textContent).toContain("重新开始");
+    expect(playback.textContent).toContain("下一事件");
+    expect(playback.textContent).not.toMatch(/Previous|Restart|Next Event/);
   });
 
   it("returns from a selected node explanation to the live flow", () => {
@@ -242,7 +274,7 @@ describe("AppView", () => {
     expect(document.querySelector(".step-rail").textContent).toContain("初始化编排");
   });
 
-  it("keeps only step navigation and contextual actions in the footer", () => {
+  it("keeps only step navigation and contextual actions in the canvas", () => {
     const view = createAppView(document.querySelector("#app"), handlers());
     view.render({ graph: demoGraph, run: createRun(demoGraph, "rag-route"), viewport: createViewport("rag-route", "rag") });
 
@@ -252,15 +284,16 @@ describe("AppView", () => {
       .toEqual(["previous", "restart", "primary"]);
   });
 
-  it("separates history, contextual actions, and progress in the footer", () => {
+  it("separates history and contextual actions without a progress block", () => {
     const view = createAppView(document.querySelector("#app"), handlers());
     view.render({ graph: demoGraph, run: createRun(demoGraph, "rag-route"), viewport: createViewport() });
 
     expect(document.querySelector(".control-history [data-action=previous]")).not.toBeNull();
     expect(document.querySelector(".control-history [data-action=restart]")).not.toBeNull();
     expect(document.querySelector(".control-actions [data-branch-choice=vector]")).not.toBeNull();
-    expect(document.querySelector(".control-progress [data-testid=run-progress]")).not.toBeNull();
-    expect(document.querySelector(".control-progress [data-testid=branch-progress]")).not.toBeNull();
+    expect(document.querySelector(".control-progress")).toBeNull();
+    expect(document.querySelector("[data-testid=run-progress]")).toBeNull();
+    expect(document.querySelector("[data-testid=branch-progress]")).toBeNull();
   });
 
   it("replaces next with branch choices at a decision", () => {
@@ -305,7 +338,7 @@ describe("AppView", () => {
     expect(primary.disabled).toBe(true);
     expect(primary.hidden).toBe(false);
     expect(primary.textContent).toContain("流程已完成");
-    expect(primary.textContent).toContain("Complete");
+    expect(primary.textContent).not.toContain("Complete");
   });
 
   it("does not let RAG branch history resolve the observation decision", () => {
@@ -431,23 +464,23 @@ describe("AppView", () => {
   it.each([
     ["cancelled", "流程已取消", "Cancelled"],
     ["failed", "执行失败", "Failed"],
-  ])("uses an accurate %s terminal action label", (status, zh, en) => {
+  ])("uses an accurate Chinese-only %s terminal action label", (status, zh, en) => {
     const view = createAppView(document.querySelector("#app"), handlers());
     view.render({ graph: demoGraph, run: { ...createRun(demoGraph, "final-event"), status }, viewport: createViewport() });
     const primary = document.querySelector('[data-action="primary"]');
     expect(primary.textContent).toContain(zh);
-    expect(primary.textContent).toContain(en);
+    expect(primary.textContent).not.toContain(en);
   });
 
-  it("shows branch completion counts for parallel work", () => {
+  it("does not show branch completion counts in the removed progress block", () => {
     const run = { ...createRun(demoGraph, "rag-retrieval"), selectedBranches: ["vector", "web"], activeBranches: ["vector", "web"], completedBranches: ["vector"] };
     const view = createAppView(document.querySelector("#app"), handlers());
     view.render({ graph: demoGraph, run, viewport: createViewport("rag-route", "rag") });
 
-    expect(document.querySelector("[data-testid=branch-progress]").textContent).toContain("1 / 2");
+    expect(document.querySelector("[data-testid=branch-progress]")).toBeNull();
   });
 
-  it("shows top-level RAG and Tools lane progress separately from retrieval branches", () => {
+  it("does not show top-level lane progress in the removed progress block", () => {
     const run = {
       ...createRun(demoGraph, "tool-select-event"),
       dispatchMode: "parallel",
@@ -457,48 +490,46 @@ describe("AppView", () => {
     const view = createAppView(document.querySelector("#app"), handlers());
     view.render({ graph: demoGraph, run, viewport: createViewport("tool-select", "tools") });
 
-    const progress = document.querySelector("[data-testid=branch-progress]").textContent;
-    expect(progress).toContain("主泳道 1 / 2");
-    expect(progress).not.toContain("检索分支 0 / 0");
+    expect(document.querySelector("[data-testid=branch-progress]")).toBeNull();
   });
 
-  it("preserves branch progress after a parallel join completes", () => {
+  it("keeps the removed progress block hidden after a parallel join completes", () => {
     let run = transition(createRun(demoGraph, "rag-route"), { type: "CHOOSE_BRANCH", choice: "parallel" });
     run = transition(run, { type: "COMPLETE_BRANCH", branch: "vector" });
     run = transition(run, { type: "COMPLETE_BRANCH", branch: "web" });
     const view = createAppView(document.querySelector("#app"), handlers());
     view.render({ graph: demoGraph, run, viewport: createViewport("rag-merge", "rag") });
 
-    expect(document.querySelector("[data-testid=branch-progress]").textContent).toContain("2 / 2");
+    expect(document.querySelector("[data-testid=branch-progress]")).toBeNull();
   });
 
-  it("shows the current iteration and event number in playback controls", () => {
+  it("does not show the current iteration and event number in playback controls", () => {
     const view = createAppView(document.querySelector("#app"), handlers());
     view.render({ graph: demoGraph, run: createRun(demoGraph, "rag-route"), viewport: createViewport("rag-route", "rag") });
 
-    expect(document.querySelector("[data-testid=run-progress]").textContent).toContain("轮次 1");
-    expect(document.querySelector("[data-testid=run-progress]").textContent).toContain(`事件 5 / ${demoGraph.events.length}`);
+    expect(document.querySelector("[data-testid=run-progress]")).toBeNull();
   });
 
-  it("offers bilingual failure simulations", () => {
+  it("offers Chinese-only failure simulation options", () => {
     const onScenarioChange = vi.fn();
     const view = createAppView(document.querySelector("#app"), { onScenarioChange });
     view.render({ graph: demoGraph, run: createRun(demoGraph), viewport: createViewport(), scenarioId: "normal" });
 
     const select = document.querySelector('[data-action="scenario"]');
     expect(select.options).toHaveLength(5);
+    expect([...select.options].every((option) => !option.textContent.includes("·"))).toBe(true);
     select.value = "tool-timeout";
     select.dispatchEvent(new Event("change"));
     expect(onScenarioChange).toHaveBeenCalledWith("tool-timeout");
   });
 
-  it("shows a concise scenario summary and simulated-state badge", () => {
+  it("shows a concise Chinese-only scenario summary and simulated-state badge", () => {
     const view = createAppView(document.querySelector("#app"), handlers());
     view.render({ graph: demoGraph, run: createRun(demoGraph), viewport: createViewport(), scenarioId: "no-results" });
 
-    expect(document.querySelector("[data-scenario-status]").textContent).toContain("SIMULATED");
+    expect(document.querySelector("[data-scenario-status]").textContent).toContain("模拟中");
     expect(document.querySelector("[data-scenario-summary]").textContent).toContain("检索结果为空");
-    expect(document.querySelector("[data-scenario-summary]").textContent).toContain("Empty retrieval results");
+    expect(document.querySelector("[data-scenario-summary]").textContent).not.toContain("Empty retrieval results");
   });
 
   it("shows issue cause and impact in the right rail", () => {
@@ -531,7 +562,7 @@ describe("AppView", () => {
 
     expect(document.querySelector('[data-action="scenario"]').value).toBe("tool-timeout");
     expect(document.querySelector('[data-node-id="orchestrator"]').classList.contains("is-live")).toBe(true);
-    expect(document.querySelector("[data-testid=run-progress]").textContent).toContain("事件 2");
+    expect(document.querySelector('[data-node-id="orchestrator"]').classList.contains("is-live")).toBe(true);
   });
 
   it("ignores held-arrow key repeats while preserving deliberate keyboard stepping", async () => {

@@ -14,10 +14,11 @@ describe("Cursor-style neutral interface", () => {
     expect(styles).not.toContain("#081423");
   });
 
-  it("separates fixed shell regions with neutral borders instead of blue panels", () => {
+  it("separates fixed shell regions and floating canvas controls with neutral surfaces", () => {
     expect(styles).toMatch(/\.topbar\s*\{[^}]*background:\s*var\(--surface\);/s);
     expect(styles).toMatch(/\.step-rail\s*\{[^}]*background:\s*var\(--panel\);/s);
-    expect(styles).toMatch(/\.controls-host\s*\{[^}]*background:\s*var\(--surface\);/s);
+    expect(styles).toMatch(/\.controls-host\s*\{[^}]*position:\s*absolute;/s);
+    expect(styles).toMatch(/\.canvas-toolbar\s*\{[^}]*background:\s*color-mix/s);
   });
 
   it("uses restrained current-state treatment without cyan glow", () => {
@@ -88,7 +89,7 @@ describe("Cursor-style neutral interface", () => {
 
   it("compacts the fixed shell and bilingual rail for short desktop screens", () => {
     expect(styles).toMatch(/@media\s*\(max-height:\s*800px\)/);
-    expect(styles).toMatch(/@media\s*\(max-height:\s*800px\)[\s\S]*\.app-shell\s*\{[^}]*grid-template-rows:\s*54px\s+minmax\(0,\s*1fr\)\s+56px/s);
+    expect(styles).toMatch(/@media\s*\(max-height:\s*800px\)[\s\S]*\.app-shell\s*\{[^}]*grid-template-rows:\s*54px\s+minmax\(0,\s*1fr\)/s);
     expect(styles).toMatch(/@media\s*\(max-height:\s*800px\)[\s\S]*\.flow-explanation li\s*\{[^}]*padding:\s*6px\s+0/s);
   });
 

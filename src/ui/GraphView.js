@@ -25,9 +25,9 @@ import {
 const SVG_NS = "http://www.w3.org/2000/svg";
 const canvasStates = new WeakMap();
 const statusLabels = {
-  waiting: "等待 · Waiting", paused: "等待操作 · Awaiting Action", running: "执行中 · Running", success: "成功 · Success",
-  completed: "完成 · Completed", failed: "失败 · Failed", skipped: "跳过 · Skipped", blocked: "已阻塞 · Blocked",
-  retrying: "重试中 · Retrying", cancelled: "已取消 · Cancelled", partial: "部分完成 · Partial",
+  waiting: "等待", paused: "等待操作", running: "执行中", success: "成功",
+  completed: "完成", failed: "失败", skipped: "跳过", blocked: "已阻塞",
+  retrying: "重试中", cancelled: "已取消", partial: "部分完成",
 };
 const relationLabels = {
   callback: "回传 · Callback",
@@ -631,16 +631,16 @@ export function renderGraph(container, { graph, run, onNodeSelect, canvasViewpor
 
   const legend = document.createElement("ul");
   legend.className = "flow-legend";
-  legend.setAttribute("aria-label", "线路状态图例 Route status legend");
-  for (const [state, zh, en] of [
-    ["live", "运行中", "Running"],
-    ["complete", "已完成", "Completed"],
-    ["callback", "回传", "Callback"],
-    ["issue", "异常/重试", "Issue / Retry"],
+  legend.setAttribute("aria-label", "线路状态图例");
+  for (const [state, zh] of [
+    ["live", "运行中"],
+    ["complete", "已完成"],
+    ["callback", "回传"],
+    ["issue", "异常/重试"],
   ]) {
     const item = document.createElement("li");
     item.dataset.legendState = state;
-    item.innerHTML = `<i aria-hidden="true"></i><span>${zh}<small>${en}</small></span>`;
+    item.innerHTML = `<i aria-hidden="true"></i><span>${zh}</span>`;
     legend.append(item);
   }
   container.replaceChildren(root, legend);

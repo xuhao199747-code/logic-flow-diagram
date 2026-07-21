@@ -15,9 +15,10 @@ describe("single-file build", () => {
     expect(html).toContain("最终响应");
     expect(html).toContain("运行进度");
     expect(html).toContain("Live Step");
-    expect(html).toContain("下一事件 · Next Event");
+    expect(html).toContain("下一事件");
+    expect(html).not.toContain("下一事件 · Next Event");
     expect(html).toContain("重新开始");
-    expect(html).toContain("Restart");
+    expect(html).not.toContain("轮次 1 · 事件");
     expect(html).toContain("data-edge-pulse-for");
     expect(html).toContain("edge-pulse__moving");
     for (const removedControl of ["全局定位", "全局视图", "跟随执行", "回到当前节点", "自动播放"]) {

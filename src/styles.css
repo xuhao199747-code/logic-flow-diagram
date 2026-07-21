@@ -100,7 +100,7 @@ body {
   width: 100%;
   height: 100%;
   display: grid;
-  grid-template-rows: 64px minmax(0, 1fr) 64px;
+  grid-template-rows: 64px minmax(0, 1fr);
   overflow: hidden;
 }
 
@@ -138,7 +138,7 @@ body {
 
 .flow-settings {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
 }
 
@@ -150,8 +150,6 @@ body {
   font-size: .75rem;
 }
 
-.diagram-control small { color: var(--muted); font-size: .65rem; }
-
 .diagram-control select {
   max-width: 230px;
   border: 1px solid var(--line);
@@ -159,11 +157,6 @@ body {
   padding: 6px 8px;
   background: var(--panel);
   color: var(--text);
-}
-
-.scenario-control small {
-  color: var(--muted);
-  font-size: .65rem;
 }
 
 .scenario-control select {
@@ -176,8 +169,10 @@ body {
 }
 
 .scenario-block {
-  width: min(430px, 42vw);
+  width: min(420px, 38vw);
   min-width: 0;
+  padding-left: 9px;
+  border-left: 1px solid var(--line);
 }
 
 .scenario-row {
@@ -193,7 +188,7 @@ body {
   padding: 2px 7px;
   color: var(--done);
   font-size: .55rem;
-  letter-spacing: .08em;
+  letter-spacing: .04em;
 }
 
 .scenario-status.is-simulated {
@@ -236,19 +231,37 @@ body {
 }
 
 .flow-legend {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 2;
   display: flex;
   gap: 9px;
   margin: 0;
   padding: 5px 7px;
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  background: transparent;
   list-style: none;
   backdrop-filter: blur(6px);
+}
+
+.canvas-toolbar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: calc(100% - 20px);
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 91%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.canvas-toolbar .flow-legend {
+  flex: 0 0 auto;
+  padding: 3px 5px;
+  border: 0;
 }
 
 .flow-legend li {
@@ -281,7 +294,7 @@ body {
 .canvas-controls {
   position: absolute;
   right: 12px;
-  bottom: 12px;
+  bottom: 52px;
   z-index: 3;
   display: flex;
   align-items: center;
@@ -861,31 +874,34 @@ body {
 }
 
 .controls-host {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  left: 10px;
+  z-index: 4;
   min-width: 0;
-  padding: 7px 14px;
-  border-top: 1px solid var(--line);
-  background: var(--surface);
+  pointer-events: none;
 }
 
 .playback {
-  height: 100%;
-  display: grid;
-  grid-template-columns: minmax(180px, 1fr) auto minmax(260px, 1fr);
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 12px;
 }
 
 .control-history,
-.control-actions,
-.control-progress {
+.control-actions {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 .control-history { justify-content: flex-start; }
-.control-actions { justify-content: center; }
-.control-progress { justify-content: flex-end; }
+.control-actions { justify-content: flex-end; }
+
+.control-history,
+.control-actions { pointer-events: auto; }
 
 .playback button {
   border: 1px solid var(--line);
@@ -895,11 +911,6 @@ body {
   color: var(--text);
   font-size: .72rem;
   cursor: pointer;
-}
-
-.playback button small {
-  color: var(--muted);
-  font-size: .61rem;
 }
 
 .playback button:disabled {
@@ -914,11 +925,6 @@ body {
   font-weight: 650;
 }
 
-.playback .primary-action:not(:disabled) small {
-  color: var(--bg);
-  opacity: .72;
-}
-
 .decision-options,
 .recovery-options {
   display: flex;
@@ -927,29 +933,6 @@ body {
 
 .decision-options button { border-color: var(--branch); }
 .recovery-options button { border-style: dashed; border-color: var(--warn); }
-
-.run-progress,
-[data-testid="branch-progress"] {
-  color: var(--muted);
-  font-size: .68rem;
-  white-space: nowrap;
-}
-
-[data-testid="branch-progress"] small {
-  display: block;
-  font-size: .58rem;
-}
-
-[data-testid="branch-progress"] {
-  max-width: 290px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.run-progress small {
-  display: block;
-  font-size: .58rem;
-}
 
 .edge-parallel.is-live,
 .edge-join.is-live { stroke: var(--live); }
@@ -1036,7 +1019,7 @@ body {
 }
 
 @media (max-height: 800px) {
-  .app-shell { grid-template-rows: 54px minmax(0, 1fr) 56px; }
+  .app-shell { grid-template-rows: 54px minmax(0, 1fr); }
   .topbar { padding: 6px 16px; }
   .title-lockup h1 { font-size: .95rem; }
   .step-rail { padding: 9px 12px; }
@@ -1051,7 +1034,6 @@ body {
   .node-role,
   .node-module { margin-top: 7px; padding: 7px 8px; }
   .node-connections { margin-top: 9px; padding-top: 8px; }
-  .controls-host { padding-block: 5px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

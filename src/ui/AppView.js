@@ -3,18 +3,22 @@ import { createNodeDetail, renderContextRail } from "./Inspector.js";
 import { renderPlaybackControls } from "./PlaybackControls.js";
 
 export function createAppView(root, handlers) {
-  root.innerHTML = `<section class="app-shell"><p class="sr-only" data-testid="run-announcement" aria-live="polite" aria-atomic="true"></p><header class="topbar"><div class="title-lockup"><span class="eyebrow">INTERACTIVE FLOW MAP</span><h1 data-lang="zh" data-diagram-title>智能代理执行流程</h1><p class="foundation-screen__support" data-lang="en" data-diagram-title-en>Interactive Agent Flow</p></div><div class="flow-settings"><label class="diagram-control">流程图 <small>Diagram</small><select data-action="diagram" aria-label="流程图 Diagram"></select></label><div class="scenario-block"><div class="scenario-row"><label class="scenario-control">模拟场景 <small>Simulation</small><select data-action="scenario" aria-label="模拟场景 Simulation"></select></label><span class="scenario-status" data-scenario-status></span></div><p data-scenario-summary></p></div></div><nav data-testid="breadcrumb" aria-label="当前步骤 Current step"></nav></header><main class="flow-stage"><div class="graph-host"></div><aside class="step-rail" aria-label="当前步骤说明 Current step details"></aside></main><footer class="controls-host"></footer></section>`;
+  root.innerHTML = `<section class="app-shell"><p class="sr-only" data-testid="run-announcement" aria-live="polite" aria-atomic="true"></p><header class="topbar"><div class="title-lockup"><span class="eyebrow">INTERACTIVE FLOW MAP</span><h1 data-lang="zh" data-diagram-title>智能代理执行流程</h1><p class="foundation-screen__support" data-lang="en" data-diagram-title-en>Interactive Agent Flow</p></div><div class="flow-settings"><label class="diagram-control">流程图<select data-action="diagram" aria-label="选择流程图"></select></label></div><nav data-testid="breadcrumb" aria-label="当前步骤 Current step"></nav></header><main class="flow-stage"><div class="graph-host"></div><aside class="step-rail" aria-label="当前步骤说明 Current step details"></aside></main></section>`;
 
   const graphHost = root.querySelector(".graph-host");
   const stepRail = root.querySelector(".step-rail");
   const breadcrumb = root.querySelector('[data-testid="breadcrumb"]');
-  const controls = root.querySelector(".controls-host");
   const diagramSelect = root.querySelector('[data-action="diagram"]');
   const diagramTitle = root.querySelector("[data-diagram-title]");
   const diagramTitleEn = root.querySelector("[data-diagram-title-en]");
-  const scenario = root.querySelector('[data-action="scenario"]');
-  const scenarioStatus = root.querySelector("[data-scenario-status]");
-  const scenarioSummary = root.querySelector("[data-scenario-summary]");
+  const scenarioBlock = document.createElement("div");
+  scenarioBlock.className = "scenario-block";
+  scenarioBlock.innerHTML = `<div class="scenario-row"><label class="scenario-control">模拟场景<select data-action="scenario" aria-label="选择模拟场景"></select></label><span class="scenario-status" data-scenario-status></span></div><p data-scenario-summary></p>`;
+  const scenario = scenarioBlock.querySelector('[data-action="scenario"]');
+  const scenarioStatus = scenarioBlock.querySelector("[data-scenario-status]");
+  const scenarioSummary = scenarioBlock.querySelector("[data-scenario-summary]");
+  const controls = document.createElement("div");
+  controls.className = "controls-host";
   const runAnnouncement = root.querySelector('[data-testid="run-announcement"]');
   let activeRailTab = "current";
   let inspectedNode = null;
@@ -48,19 +52,19 @@ export function createAppView(root, handlers) {
         ? state.diagrams
         : [state.diagram ?? { id: state.diagramId ?? state.graph.id ?? "current-diagram", label: { zh: "智能代理执行流程", en: "Interactive Agent Flow" }, graph: state.graph }];
       const activeDiagram = state.diagram ?? availableDiagrams.find((item) => item.id === state.diagramId) ?? availableDiagrams[0];
-      diagramSelect.replaceChildren(...availableDiagrams.map((item) => new Option(`${item.label.zh} · ${item.label.en}`, item.id)));
+      diagramSelect.replaceChildren(...availableDiagrams.map((item) => new Option(item.label.zh, item.id)));
       diagramSelect.value = activeDiagram.id;
       diagramSelect.onchange = (event) => handlers.onDiagramChange?.(event.target.value);
       diagramTitle.textContent = activeDiagram.label.zh;
       diagramTitleEn.textContent = activeDiagram.label.en;
-      scenario.replaceChildren(...state.graph.scenarios.map((item) => new Option(`${item.label.zh} · ${item.label.en}`, item.id)));
+      scenario.replaceChildren(...state.graph.scenarios.map((item) => new Option(item.label.zh, item.id)));
       scenario.value = state.scenarioId ?? "normal";
       scenario.onchange = (event) => handlers.onScenarioChange?.(event.target.value);
       const selectedScenario = state.graph.scenarios.find((item) => item.id === (state.scenarioId ?? "normal")) ?? state.graph.scenarios[0];
       const simulated = selectedScenario.id !== "normal";
-      scenarioStatus.textContent = simulated ? "SIMULATED" : "NORMAL";
+      scenarioStatus.textContent = simulated ? "模拟中" : "正常";
       scenarioStatus.classList.toggle("is-simulated", simulated);
-      scenarioSummary.textContent = `${selectedScenario.description.zh} · ${selectedScenario.description.en}`;
+      scenarioSummary.textContent = selectedScenario.description.zh;
 
       const currentEvent = state.graph.events.find((item) => item.id === state.run.currentEventId);
       const currentNode = state.graph.nodes.find((item) => item.id === currentEvent.nodeId);
@@ -115,6 +119,10 @@ export function createAppView(root, handlers) {
       };
 
       renderGraph(graphHost, { ...state, onNodeSelect: inspectNode, onCanvasViewportChange: handlers.onCanvasViewportChange });
+      const canvasToolbar = document.createElement("div");
+      canvasToolbar.className = "canvas-toolbar";
+      canvasToolbar.append(graphHost.querySelector(".flow-legend"), scenarioBlock);
+      graphHost.append(canvasToolbar, controls);
       renderRail();
       renderPlaybackControls(controls, {
         run: state.run,
