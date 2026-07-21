@@ -113,6 +113,9 @@ describe("GraphView", () => {
     expect([...host.querySelectorAll(".canvas-controls button")].map((button) => button.dataset.canvasAction))
       .toEqual(["zoom-out", "zoom-in", "fit"]);
     expect(host.querySelector("[data-canvas-zoom]").textContent).toBe("100%");
+    expect(host.querySelector(".canvas-controls").getAttribute("aria-label")).toBe("画布缩放");
+    expect(host.querySelector('[data-canvas-action="fit"]').textContent).toBe("适应");
+    expect(host.querySelector(".canvas-controls small")).toBeNull();
 
     host.querySelector('[data-canvas-action="zoom-in"]').click();
     const zoomedViewBox = host.querySelector("svg").getAttribute("viewBox");

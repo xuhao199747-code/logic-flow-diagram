@@ -7,14 +7,14 @@ describe("single-file build", () => {
   it("inlines all runtime assets", () => {
     const html = readFileSync(new URL("../../dist/index.html", import.meta.url), "utf8");
 
-    expect(html).toContain("Agent 动态执行流程");
+    expect(html).toContain("Agent执行流程");
     for (const label of ["输入与编排", "Agent 核心", "RAG 检索增强", "工具与反馈", "最终响应"]) {
       expect(html).toContain(label);
     }
     expect(html).toContain("用户任务");
     expect(html).toContain("最终响应");
     expect(html).toContain("运行进度");
-    expect(html).toContain("Live Step");
+    expect(html).not.toContain("Live Step");
     expect(html).toContain("下一事件");
     expect(html).not.toContain("下一事件 · Next Event");
     expect(html).toContain("重新开始");

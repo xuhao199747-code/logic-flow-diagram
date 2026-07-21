@@ -388,8 +388,8 @@ function canvasRecordFor(container, graph, run, initialViewport) {
 function renderCanvasControls(container, root, record, onCanvasViewportChange) {
   const controls = document.createElement("div");
   controls.className = "canvas-controls";
-  controls.setAttribute("aria-label", "画布缩放 Canvas zoom");
-  controls.innerHTML = `<button type="button" data-canvas-action="zoom-out" aria-label="缩小 Zoom out">−</button><output data-canvas-zoom aria-label="当前缩放 Current zoom"></output><button type="button" data-canvas-action="zoom-in" aria-label="放大 Zoom in">+</button><button type="button" data-canvas-action="fit" aria-label="适应屏幕 Fit to screen">适应<small>Fit</small></button>`;
+  controls.setAttribute("aria-label", "画布缩放");
+  controls.innerHTML = `<button type="button" data-canvas-action="zoom-out" aria-label="缩小">−</button><output data-canvas-zoom aria-label="当前缩放"></output><button type="button" data-canvas-action="zoom-in" aria-label="放大">+</button><button type="button" data-canvas-action="fit" aria-label="适应屏幕">适应</button>`;
 
   const apply = (next, notify = true) => {
     record.viewport = next;

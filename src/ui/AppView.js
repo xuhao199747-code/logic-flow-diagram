@@ -3,14 +3,13 @@ import { createNodeDetail, renderContextRail } from "./Inspector.js";
 import { renderPlaybackControls } from "./PlaybackControls.js";
 
 export function createAppView(root, handlers) {
-  root.innerHTML = `<section class="app-shell"><p class="sr-only" data-testid="run-announcement" aria-live="polite" aria-atomic="true"></p><header class="topbar"><div class="title-lockup"><span class="eyebrow">INTERACTIVE FLOW MAP</span><h1 data-lang="zh" data-diagram-title>智能代理执行流程</h1><p class="foundation-screen__support" data-lang="en" data-diagram-title-en>Interactive Agent Flow</p></div><div class="flow-settings"><label class="diagram-control">流程图<select data-action="diagram" aria-label="选择流程图"></select></label></div><nav data-testid="breadcrumb" aria-label="当前步骤 Current step"></nav></header><main class="flow-stage"><div class="graph-host"></div><aside class="step-rail" aria-label="当前步骤说明 Current step details"></aside></main></section>`;
+  root.innerHTML = `<section class="app-shell"><p class="sr-only" data-testid="run-announcement" aria-live="polite" aria-atomic="true"></p><header class="topbar"><div class="title-lockup"><h1 data-lang="zh" data-diagram-title>Agent执行流程</h1></div><div class="flow-settings"><label class="diagram-control">流程图<select data-action="diagram" aria-label="选择流程图"></select></label></div><nav data-testid="breadcrumb" aria-label="当前步骤"></nav></header><main class="flow-stage"><div class="graph-host"></div><aside class="step-rail" aria-label="当前步骤说明"></aside></main></section>`;
 
   const graphHost = root.querySelector(".graph-host");
   const stepRail = root.querySelector(".step-rail");
   const breadcrumb = root.querySelector('[data-testid="breadcrumb"]');
   const diagramSelect = root.querySelector('[data-action="diagram"]');
   const diagramTitle = root.querySelector("[data-diagram-title]");
-  const diagramTitleEn = root.querySelector("[data-diagram-title-en]");
   const scenarioBlock = document.createElement("div");
   scenarioBlock.className = "scenario-block";
   scenarioBlock.innerHTML = `<div class="scenario-row"><label class="scenario-control">模拟场景<select data-action="scenario" aria-label="选择模拟场景"></select></label><span class="scenario-status" data-scenario-status></span></div><p data-scenario-summary></p>`;
@@ -50,13 +49,12 @@ export function createAppView(root, handlers) {
     render(state) {
       const availableDiagrams = state.diagrams?.length
         ? state.diagrams
-        : [state.diagram ?? { id: state.diagramId ?? state.graph.id ?? "current-diagram", label: { zh: "智能代理执行流程", en: "Interactive Agent Flow" }, graph: state.graph }];
+        : [state.diagram ?? { id: state.diagramId ?? state.graph.id ?? "current-diagram", label: { zh: "Agent执行流程", en: "Interactive Agent Flow" }, graph: state.graph }];
       const activeDiagram = state.diagram ?? availableDiagrams.find((item) => item.id === state.diagramId) ?? availableDiagrams[0];
       diagramSelect.replaceChildren(...availableDiagrams.map((item) => new Option(item.label.zh, item.id)));
       diagramSelect.value = activeDiagram.id;
       diagramSelect.onchange = (event) => handlers.onDiagramChange?.(event.target.value);
       diagramTitle.textContent = activeDiagram.label.zh;
-      diagramTitleEn.textContent = activeDiagram.label.en;
       scenario.replaceChildren(...state.graph.scenarios.map((item) => new Option(item.label.zh, item.id)));
       scenario.value = state.scenarioId ?? "normal";
       scenario.onchange = (event) => handlers.onScenarioChange?.(event.target.value);
@@ -72,7 +70,7 @@ export function createAppView(root, handlers) {
       breadcrumb.textContent = [state.graph.systemBoundary.label.zh, currentModule.label.zh, currentNode.label.zh]
         .filter((label, index, labels) => index === 0 || label !== labels[index - 1])
         .join(" > ");
-      runAnnouncement.textContent = `${currentEvent.label.zh} · ${currentEvent.label.en}，${state.run.status}`;
+      runAnnouncement.textContent = `当前步骤：${currentEvent.label.zh}`;
 
       const cursorKey = `${state.run.currentEventId}:${state.run.trace.length}:${state.run.iteration}`;
       if (cursorKey !== lastCursorKey) {

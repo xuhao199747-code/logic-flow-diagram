@@ -41,8 +41,8 @@ const relationReasons = {
   },
 };
 
-function supportText(zh, en) {
-  return `<span>${zh}</span><small>${en}</small>`;
+function supportText(zh) {
+  return `<span>${zh}</span>`;
 }
 
 export function createNodeDetail(graph, selection, guides = null) {
@@ -71,16 +71,16 @@ export function createNodeDetail(graph, selection, guides = null) {
   };
 }
 
-function bilingualList(items) {
+function chineseList(items) {
   if (!items.length) return '<span class="empty-value">—</span>';
-  return `<ul>${items.map((item) => `<li>${item.zh}<small>${item.en}</small></li>`).join("")}</ul>`;
+  return `<ul>${items.map((item) => `<li>${item.zh}</li>`).join("")}</ul>`;
 }
 
 function renderCurrentContent(container, { node, event, snapshot, guide: providedGuide }) {
   const issue = snapshot.issue;
   const issueLabel = issue?.label ?? issue;
-  const requestAcknowledgement = issue?.requested ? `<p class="issue-ack">确认请求已发送<small>Confirmation requested</small></p>` : "";
-  const issueBanner = issue ? `<section class="issue-banner" role="status"><span>模拟异常 · Simulated Issue</span><strong>${issueLabel.zh ?? issue.id}<small>${issueLabel.en ?? ""}</small></strong>${requestAcknowledgement}${issue.description ? `<p>${issue.description.zh}<small>${issue.description.en}</small></p>` : ""}${issue.impact ? `<p>影响：${issue.impact.zh}<small>Impact: ${issue.impact.en}</small></p>` : ""}</section>` : "";
+  const requestAcknowledgement = issue?.requested ? `<p class="issue-ack">确认请求已发送</p>` : "";
+  const issueBanner = issue ? `<section class="issue-banner" role="status"><span>模拟异常</span><strong>${issueLabel.zh ?? issue.id}</strong>${requestAcknowledgement}${issue.description ? `<p>${issue.description.zh}</p>` : ""}${issue.impact ? `<p>影响：${issue.impact.zh}</p>` : ""}</section>` : "";
   const guide = providedGuide ?? eventGuideFor(event.id);
   const now = guide?.now ?? {
     zh: `${node.label.zh}正在处理这一环节。`,
@@ -98,7 +98,7 @@ function renderCurrentContent(container, { node, event, snapshot, guide: provide
       : { zh: `完成「${event.label.zh}」并形成可继续传递的结果。`, en: `Complete “${event.label.en}” and produce a result for the next stage.` });
   const next = snapshot.next;
   const status = statusLabelFor(snapshot.status);
-  container.innerHTML = `<header class="guide-header"><div class="guide-title"><span class="guide-live-dot" aria-hidden="true"></span><strong>运行进度</strong><small>Live Step</small></div><span class="status-chip">${status.zh} · ${status.en}</span><h2>${event.label.zh}<small>${event.label.en}</small></h2><p class="guide-context">所属环节：${node.label.zh}<small>Stage: ${node.label.en}</small></p></header>${issueBanner}<ol class="flow-explanation" aria-label="流程讲解 Flow explanation"><li data-guide-part="now"><span class="guide-index">01</span><div><strong>现在 <small>Now</small></strong><p>${supportText(now.zh, now.en)}</p></div></li><li data-guide-part="reason"><span class="guide-index">02</span><div><strong>原因 <small>Why</small></strong><p>${supportText(reason.zh, reason.en)}</p></div></li><li data-guide-part="result"><span class="guide-index">03</span><div><strong>结果 <small>Result</small></strong><p>${supportText(result.zh, result.en)}</p></div></li><li data-guide-part="next"><span class="guide-index">04</span><div><strong>下一步 <small>Next</small></strong><p>${supportText(next.zh, next.en)}</p></div></li></ol>`;
+  container.innerHTML = `<header class="guide-header"><div class="guide-title"><span class="guide-live-dot" aria-hidden="true"></span><strong>运行进度</strong></div><span class="status-chip">${status.zh}</span><h2>${event.label.zh}</h2><p class="guide-context">所属环节：${node.label.zh}</p></header>${issueBanner}<ol class="flow-explanation" aria-label="流程讲解"><li data-guide-part="now"><span class="guide-index">01</span><div><strong>现在</strong><p>${supportText(now.zh)}</p></div></li><li data-guide-part="reason"><span class="guide-index">02</span><div><strong>原因</strong><p>${supportText(reason.zh)}</p></div></li><li data-guide-part="result"><span class="guide-index">03</span><div><strong>结果</strong><p>${supportText(result.zh)}</p></div></li><li data-guide-part="next"><span class="guide-index">04</span><div><strong>下一步</strong><p>${supportText(next.zh)}</p></div></li></ol>`;
 }
 
 function renderNodeContent(container, detail, current) {
@@ -107,9 +107,9 @@ function renderNodeContent(container, detail, current) {
     en: `A stage in “${detail.parentLabel.en}” that completes “${detail.label.en}” and passes its result onward.`,
   };
   const connections = detail.incoming.length || detail.outgoing.length
-    ? `<h3>信息流向 <small>Information Flow</small></h3><div><span>接收自 <small>Receives From</small></span>${bilingualList(detail.incoming)}</div><div><span>发送至 <small>Sends To</small></span>${bilingualList(detail.outgoing)}</div>`
-    : `<h3>模块内部步骤 <small>Internal Module Step</small></h3><p class="internal-flow-note">它在当前模块内部参与处理，不单独占用主流程线路。<small>It works inside this module without creating a separate main-flow route.</small></p>`;
-  container.innerHTML = `<header class="guide-header node-guide-header"><button type="button" class="back-to-live" data-action="back-to-live">← 返回运行进度 <small>Back to Live Step</small></button><div class="guide-title"><strong>节点说明</strong><small>Node Guide</small></div><h2>${detail.label.zh}<small>${detail.label.en}</small></h2><div class="inspection-context"><p>当前运行：${current.event.label.zh}<small>Running: ${current.event.label.en}</small></p><p>正在查看：${detail.label.zh}<small>Viewing: ${detail.label.en}</small></p></div></header><section class="node-role" data-guide-part="role"><span>作用 <small>Purpose</small></span><p>${supportText(role.zh, role.en)}</p></section><section class="node-module" data-guide-part="module"><span>所属模块 <small>Module</small></span><p>${supportText(detail.parentLabel.zh, detail.parentLabel.en)}</p></section><section class="node-connections" aria-label="节点连接 Node connections">${connections}</section>`;
+    ? `<h3>信息流向</h3><div><span>接收自</span>${chineseList(detail.incoming)}</div><div><span>发送至</span>${chineseList(detail.outgoing)}</div>`
+    : `<h3>模块内部步骤</h3><p class="internal-flow-note">它在当前模块内部参与处理，不单独占用主流程线路。</p>`;
+  container.innerHTML = `<header class="guide-header node-guide-header"><button type="button" class="back-to-live" data-action="back-to-live">← 返回运行进度</button><div class="guide-title"><strong>节点说明</strong></div><h2>${detail.label.zh}</h2><div class="inspection-context"><p>当前运行：${current.event.label.zh}</p><p>正在查看：${detail.label.zh}</p></div></header><section class="node-role" data-guide-part="role"><span>作用</span><p>${supportText(role.zh)}</p></section><section class="node-module" data-guide-part="module"><span>所属模块</span><p>${supportText(detail.parentLabel.zh)}</p></section><section class="node-connections" aria-label="节点连接">${connections}</section>`;
 }
 
 export function renderContextRail(container, { current, nodeDetail, activeTab = "current", onTabChange }) {

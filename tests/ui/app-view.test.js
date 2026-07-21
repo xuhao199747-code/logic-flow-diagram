@@ -80,14 +80,14 @@ describe("AppView", () => {
     const onDiagramChange = vi.fn();
     const view = createAppView(document.querySelector("#app"), { ...handlers(), onDiagramChange });
     const diagrams = [
-      { id: "agent-execution", label: { zh: "智能代理执行流程", en: "Interactive Agent Flow" }, graph: demoGraph },
+      { id: "agent-execution", label: { zh: "Agent执行流程", en: "Interactive Agent Flow" }, graph: demoGraph },
       { id: "other-flow", label: { zh: "另一流程", en: "Other Flow" }, graph: demoGraph },
     ];
     view.render({ graph: demoGraph, diagramId: "agent-execution", diagrams, run: createRun(demoGraph), viewport: createViewport() });
 
     const select = document.querySelector('[data-action="diagram"]');
     expect([...select.options].map((option) => option.value)).toEqual(["agent-execution", "other-flow"]);
-    expect([...select.options].map((option) => option.textContent)).toEqual(["智能代理执行流程", "另一流程"]);
+    expect([...select.options].map((option) => option.textContent)).toEqual(["Agent执行流程", "另一流程"]);
     expect(document.querySelector(".diagram-control").textContent).not.toContain("Diagram");
     select.value = "other-flow";
     select.dispatchEvent(new Event("change"));
@@ -144,25 +144,34 @@ describe("AppView", () => {
     const rail = document.querySelector(".step-rail");
     expect(document.querySelector(".rail-tabs")).toBeNull();
     expect(rail.textContent).toContain("运行进度");
-    expect(rail.textContent).toContain("Live Step");
+    expect(rail.textContent).not.toContain("Live Step");
     expect([...rail.querySelectorAll("[data-guide-part]")].map((part) => part.dataset.guidePart))
       .toEqual(["now", "reason", "result", "next"]);
     expect(document.querySelector(".step-rail").textContent).toContain("检索路由");
-    expect(document.querySelector(".step-rail").textContent).toContain("Retrieval Routing");
+    expect(document.querySelector(".step-rail").textContent).not.toContain("Retrieval Routing");
     expect(document.querySelector(".step-rail").textContent).toContain("检查任务需要补充的知识类型");
     expect(document.querySelector(".step-rail").textContent).toContain("实时信息");
   });
 
-  it("announces the current step and renders a bilingual status", () => {
+  it("announces the current step and renders a Chinese-only status", () => {
     const view = createAppView(document.querySelector("#app"), handlers());
     view.render({ graph: demoGraph, run: createRun(demoGraph), viewport: createViewport() });
 
     const announcement = document.querySelector('[data-testid="run-announcement"]');
     expect(announcement.getAttribute("aria-live")).toBe("polite");
     expect(announcement.textContent).toContain("接收用户任务");
-    expect(announcement.textContent).toContain("Receive Task");
+    expect(announcement.textContent).not.toContain("Receive Task");
     expect(document.querySelector(".status-chip").textContent).toContain("等待操作");
-    expect(document.querySelector(".status-chip").textContent).toContain("Awaiting Action");
+    expect(document.querySelector(".status-chip").textContent).not.toContain("Awaiting Action");
+  });
+
+  it("keeps bilingual copy only inside the flow diagram", () => {
+    const view = createAppView(document.querySelector("#app"), handlers());
+    view.render({ graph: demoGraph, run: createRun(demoGraph), viewport: createViewport() });
+
+    expect(document.querySelector(".step-rail small")).toBeNull();
+    expect(document.querySelector(".title-lockup small")).toBeNull();
+    expect(document.querySelector(".architecture-graph .node-en").textContent).toBe("User Task");
   });
 
   it("shows a compact four-state route legend over the graph", () => {
@@ -213,7 +222,7 @@ describe("AppView", () => {
     document.querySelector('[data-detail-node-id="rag-query"]').dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
     expect(document.querySelector(".step-rail").textContent).toContain("节点说明");
-    expect(document.querySelector(".step-rail").textContent).toContain("Node Guide");
+    expect(document.querySelector(".step-rail").textContent).not.toContain("Node Guide");
     const back = document.querySelector('[data-action="back-to-live"]');
     expect(back.textContent).toContain("返回运行进度");
     back.click();
@@ -230,8 +239,8 @@ describe("AppView", () => {
     const context = document.querySelector(".inspection-context");
     expect(context.textContent).toContain("当前运行：选择检索路径");
     expect(context.textContent).toContain("正在查看：长期记忆");
-    expect(context.textContent).toContain("Running");
-    expect(context.textContent).toContain("Viewing");
+    expect(context.textContent).not.toContain("Running");
+    expect(context.textContent).not.toContain("Viewing");
   });
 
   it("opens clicked graph content in Node Detail without changing the execution cursor", () => {
@@ -244,7 +253,7 @@ describe("AppView", () => {
     expect(run.currentEventId).toBe("rag-route");
     expect(document.querySelector(".step-rail").textContent).toContain("节点说明");
     expect(document.querySelector(".step-rail").textContent).toContain("Query处理");
-    expect(document.querySelector(".step-rail").textContent).toContain("Query Processing");
+    expect(document.querySelector(".step-rail").textContent).not.toContain("Query Processing");
     expect(document.querySelector(".node-connections").textContent).toContain("大语言模型");
     expect(document.querySelector(".node-connections").textContent).toContain("路由");
   });
@@ -256,7 +265,7 @@ describe("AppView", () => {
     document.querySelector('[data-detail-node-id="memory-long-term"]').dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
     expect(document.querySelector(".node-connections").textContent).toContain("模块内部步骤");
-    expect(document.querySelector(".node-connections").textContent).toContain("Internal Module Step");
+    expect(document.querySelector(".node-connections").textContent).not.toContain("Internal Module Step");
     expect(document.querySelector(".node-connections").textContent).not.toContain("接收自");
     expect(document.querySelector(".node-role").textContent).toContain("跨会话");
   });
@@ -457,7 +466,7 @@ describe("AppView", () => {
     view.render({ graph: demoGraph, run, viewport: createViewport(), scenarioId: issue.id });
 
     expect(document.querySelector(".issue-banner").textContent).toContain("确认请求已发送");
-    expect(document.querySelector(".issue-banner").textContent).toContain("Confirmation requested");
+    expect(document.querySelector(".issue-banner").textContent).not.toContain("Confirmation requested");
     expect(document.querySelector('[data-recovery="request"]').disabled).toBe(true);
   });
 
@@ -540,7 +549,7 @@ describe("AppView", () => {
 
     expect(document.querySelector(".issue-banner").textContent).toContain("检索结果为空");
     expect(document.querySelector(".issue-banner").textContent).toContain("RAG 汇合");
-    expect(document.querySelector(".issue-banner").textContent).toContain("RAG Join");
+    expect(document.querySelector(".issue-banner").textContent).not.toContain("RAG Join");
   });
 
   it("resets the run when changing scenarios", async () => {

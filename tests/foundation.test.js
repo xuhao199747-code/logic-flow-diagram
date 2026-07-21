@@ -18,20 +18,17 @@ describe("foundation shell", () => {
     expect(colors.every((color) => approvedPalette.has(color))).toBe(true);
   });
 
-  it("renders Chinese as primary copy with English support", async () => {
+  it("renders a single Chinese interface title", async () => {
     document.body.innerHTML = '<div id="app"></div>';
     await import("../src/main.js?foundation-shell-test");
     const styles = readFileSync("src/styles.css", "utf8");
 
     const primary = document.querySelector('[data-lang="zh"]');
-    const support = document.querySelector('[data-lang="en"]');
-
     expect(primary).not.toBeNull();
-    expect(primary.textContent).toContain("智能代理执行流程");
-    expect(support).not.toBeNull();
-    expect(support.textContent).toContain("Interactive Agent Flow");
-    expect(support.classList.contains("foundation-screen__support")).toBe(true);
-    expect(styles).toMatch(/\.foundation-screen__support\s*{[^}]*color:\s*var\(--muted\);/);
+    expect(primary.textContent).toBe("Agent执行流程");
+    expect(document.querySelector('[data-lang="en"]')).toBeNull();
+    expect(document.querySelector(".eyebrow")).toBeNull();
+    expect(styles).not.toMatch(/\.foundation-screen__support\s*\{/);
   });
 
   it("declares the pinned tooling Node support range", () => {

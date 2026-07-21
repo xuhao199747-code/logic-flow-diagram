@@ -12,7 +12,7 @@ describe("diagram registry", () => {
     expect(diagramRegistry).toHaveLength(1);
     expect(diagram).toMatchObject({
       id: "agent-execution",
-      label: { zh: "智能代理执行流程", en: "Interactive Agent Flow" },
+      label: { zh: "Agent执行流程", en: "Interactive Agent Flow" },
       graph: demoGraph,
     });
     expect(diagram.guides.eventGuideFor("rag-route").reason.zh).toContain("实时信息");
