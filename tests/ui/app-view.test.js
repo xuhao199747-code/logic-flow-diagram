@@ -95,6 +95,8 @@ describe("AppView", () => {
       .toEqual(["now", "reason", "result", "next"]);
     expect(document.querySelector(".step-rail").textContent).toContain("检索路由");
     expect(document.querySelector(".step-rail").textContent).toContain("Retrieval Routing");
+    expect(document.querySelector(".step-rail").textContent).toContain("检查任务需要补充的知识类型");
+    expect(document.querySelector(".step-rail").textContent).toContain("实时信息");
   });
 
   it("announces the current step and renders a bilingual status", () => {
@@ -148,6 +150,7 @@ describe("AppView", () => {
     expect(document.querySelector(".node-connections").textContent).toContain("模块内部步骤");
     expect(document.querySelector(".node-connections").textContent).toContain("Internal Module Step");
     expect(document.querySelector(".node-connections").textContent).not.toContain("接收自");
+    expect(document.querySelector(".node-role").textContent).toContain("跨会话");
   });
 
   it("returns the rail to Current Step when execution advances", () => {

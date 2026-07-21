@@ -494,6 +494,19 @@ body {
   font-weight: 400;
 }
 
+.guide-context {
+  display: flex;
+  gap: 4px;
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: .58rem;
+}
+
+.guide-context small {
+  color: var(--subtle);
+  font-size: inherit;
+}
+
 .status-chip {
   display: inline-flex;
   border: 1px solid var(--line-strong);

@@ -1,3 +1,5 @@
+import { eventGuideFor, nodeGuideFor } from "../data/flow-guide.js";
+
 function endpointLabel(graph, id) {
   const item = [
     ...graph.nodes,
@@ -73,7 +75,7 @@ export function createNodeDetail(graph, selection) {
     type: selection.type,
     label: item.label,
     parentLabel: parent?.label ?? { zh: "Agent 系统", en: "Agent System" },
-    description: item.description ?? null,
+    description: nodeGuideFor(item.id)?.purpose ?? item.description ?? null,
     detailSteps: item.detailSteps ?? [],
     incoming,
     outgoing,
@@ -90,17 +92,22 @@ function renderCurrentContent(container, { node, event, snapshot }) {
   const issueLabel = issue?.label ?? issue;
   const requestAcknowledgement = issue?.requested ? `<p class="issue-ack">确认请求已发送<small>Confirmation requested</small></p>` : "";
   const issueBanner = issue ? `<section class="issue-banner" role="status"><span>模拟异常 · Simulated Issue</span><strong>${issueLabel.zh ?? issue.id}<small>${issueLabel.en ?? ""}</small></strong>${requestAcknowledgement}${issue.description ? `<p>${issue.description.zh}<small>${issue.description.en}</small></p>` : ""}${issue.impact ? `<p>影响：${issue.impact.zh}<small>Impact: ${issue.impact.en}</small></p>` : ""}</section>` : "";
-  const reason = relationReasons[event.relation] ?? relationReasons.sequence;
+  const guide = eventGuideFor(event.id);
+  const now = guide?.now ?? {
+    zh: `${node.label.zh}正在处理这一环节。`,
+    en: `${node.label.en} is handling this stage.`,
+  };
+  const reason = guide?.reason ?? relationReasons[event.relation] ?? relationReasons.sequence;
   const result = issue
     ? {
         zh: `流程在这里遇到「${issueLabel.zh ?? issue.id}」，需要先处理异常。`,
         en: `The flow encountered “${issueLabel.en ?? issue.id}” and needs attention here.`,
       }
-    : event.choices
+    : guide?.result ?? (event.choices
       ? { zh: "确定一条合适的执行路径。", en: "Select the most suitable execution path." }
-      : { zh: `完成「${event.label.zh}」并形成可继续传递的结果。`, en: `Complete “${event.label.en}” and produce a result for the next stage.` };
+      : { zh: `完成「${event.label.zh}」并形成可继续传递的结果。`, en: `Complete “${event.label.en}” and produce a result for the next stage.` });
   const next = snapshot.next;
-  container.innerHTML = `<header class="guide-header"><div class="guide-title"><span class="guide-live-dot" aria-hidden="true"></span><strong>运行进度</strong><small>Live Step</small></div><span class="status-chip">${statusLabels[snapshot.status] ?? snapshot.status}</span><h2>${event.label.zh}<small>${event.label.en}</small></h2></header>${issueBanner}<ol class="flow-explanation" aria-label="流程讲解 Flow explanation"><li data-guide-part="now"><span class="guide-index">01</span><div><strong>现在 <small>Now</small></strong><p>${supportText(`${node.label.zh}正在处理这一环节。`, `${node.label.en} is handling this stage.`)}</p></div></li><li data-guide-part="reason"><span class="guide-index">02</span><div><strong>原因 <small>Why</small></strong><p>${supportText(reason.zh, reason.en)}</p></div></li><li data-guide-part="result"><span class="guide-index">03</span><div><strong>结果 <small>Result</small></strong><p>${supportText(result.zh, result.en)}</p></div></li><li data-guide-part="next"><span class="guide-index">04</span><div><strong>下一步 <small>Next</small></strong><p>${supportText(next.zh, next.en)}</p></div></li></ol>`;
+  container.innerHTML = `<header class="guide-header"><div class="guide-title"><span class="guide-live-dot" aria-hidden="true"></span><strong>运行进度</strong><small>Live Step</small></div><span class="status-chip">${statusLabels[snapshot.status] ?? snapshot.status}</span><h2>${event.label.zh}<small>${event.label.en}</small></h2><p class="guide-context">所属环节：${node.label.zh}<small>Stage: ${node.label.en}</small></p></header>${issueBanner}<ol class="flow-explanation" aria-label="流程讲解 Flow explanation"><li data-guide-part="now"><span class="guide-index">01</span><div><strong>现在 <small>Now</small></strong><p>${supportText(now.zh, now.en)}</p></div></li><li data-guide-part="reason"><span class="guide-index">02</span><div><strong>原因 <small>Why</small></strong><p>${supportText(reason.zh, reason.en)}</p></div></li><li data-guide-part="result"><span class="guide-index">03</span><div><strong>结果 <small>Result</small></strong><p>${supportText(result.zh, result.en)}</p></div></li><li data-guide-part="next"><span class="guide-index">04</span><div><strong>下一步 <small>Next</small></strong><p>${supportText(next.zh, next.en)}</p></div></li></ol>`;
 }
 
 function renderNodeContent(container, detail) {
