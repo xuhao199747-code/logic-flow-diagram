@@ -14,8 +14,16 @@ import {
   flowModuleForNode,
   flowPresentationForConnection,
 } from "./flowPresentation.js";
+import {
+  createCanvasViewport,
+  panCanvasBy,
+  viewBoxFor,
+  wheelActionFor,
+  zoomCanvasAt,
+} from "./canvasViewport.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
+const canvasStates = new WeakMap();
 const statusLabels = {
   waiting: "等待 · Waiting", paused: "等待操作 · Awaiting Action", running: "执行中 · Running", success: "成功 · Success",
   completed: "完成 · Completed", failed: "失败 · Failed", skipped: "跳过 · Skipped", blocked: "已阻塞 · Blocked",
@@ -364,8 +372,93 @@ function relationEndpoints(graph, run, currentEvent) {
   return endpoints;
 }
 
+function canvasRecordFor(container, graph, run) {
+  const initialEventId = graph.events[0]?.id;
+  const prior = canvasStates.get(container);
+  const restarted = prior && run.currentEventId === initialEventId && prior.lastEventId !== initialEventId;
+  const record = !prior || restarted
+    ? { viewport: createCanvasViewport(), lastEventId: run.currentEventId }
+    : { ...prior, lastEventId: run.currentEventId };
+  canvasStates.set(container, record);
+  return record;
+}
+
+function renderCanvasControls(container, root, record) {
+  const controls = document.createElement("div");
+  controls.className = "canvas-controls";
+  controls.setAttribute("aria-label", "画布缩放 Canvas zoom");
+  controls.innerHTML = `<button type="button" data-canvas-action="zoom-out" aria-label="缩小 Zoom out">−</button><output data-canvas-zoom aria-label="当前缩放 Current zoom"></output><button type="button" data-canvas-action="zoom-in" aria-label="放大 Zoom in">+</button><button type="button" data-canvas-action="fit" aria-label="适应屏幕 Fit to screen">适应<small>Fit</small></button>`;
+
+  const apply = (next) => {
+    record.viewport = next;
+    root.setAttribute("viewBox", viewBoxFor(next));
+    controls.querySelector("[data-canvas-zoom]").textContent = `${Math.round(next.zoom * 100)}%`;
+  };
+  const center = () => {
+    const [x, y, width, height] = viewBoxFor(record.viewport).split(" ").map(Number);
+    return { x: x + width / 2, y: y + height / 2 };
+  };
+
+  controls.querySelector('[data-canvas-action="zoom-out"]').onclick = () => apply(zoomCanvasAt(record.viewport, record.viewport.zoom / 1.25, center()));
+  controls.querySelector('[data-canvas-action="zoom-in"]').onclick = () => apply(zoomCanvasAt(record.viewport, record.viewport.zoom * 1.25, center()));
+  controls.querySelector('[data-canvas-action="fit"]').onclick = () => apply(createCanvasViewport());
+  apply(record.viewport);
+  container.append(controls);
+  return apply;
+}
+
+function bindCanvasGestures(root, record, apply) {
+  root.classList.add("is-pannable");
+  const diagramPoint = (clientX, clientY) => {
+    const rect = root.getBoundingClientRect();
+    const [x, y, width, height] = viewBoxFor(record.viewport).split(" ").map(Number);
+    const normalizedX = rect.width ? (clientX - rect.left) / rect.width : 0.5;
+    const normalizedY = rect.height ? (clientY - rect.top) / rect.height : 0.5;
+    return { x: x + normalizedX * width, y: y + normalizedY * height };
+  };
+
+  root.addEventListener("wheel", (event) => {
+    event.preventDefault();
+    if (wheelActionFor(event) === "zoom") {
+      const factor = event.deltaY < 0 ? 1.12 : 1 / 1.12;
+      apply(zoomCanvasAt(record.viewport, record.viewport.zoom * factor, diagramPoint(event.clientX, event.clientY)));
+      return;
+    }
+    const rect = root.getBoundingClientRect();
+    const [, , width, height] = viewBoxFor(record.viewport).split(" ").map(Number);
+    apply(panCanvasBy(record.viewport, rect.width ? event.deltaX * width / rect.width : event.deltaX, rect.height ? event.deltaY * height / rect.height : event.deltaY));
+  }, { passive: false });
+
+  let drag = null;
+  root.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0 || event.target.closest?.('[role="button"]')) return;
+    drag = { x: event.clientX, y: event.clientY, pointerId: event.pointerId };
+    root.classList.add("is-panning");
+    root.setPointerCapture?.(event.pointerId);
+  });
+  root.addEventListener("pointermove", (event) => {
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const rect = root.getBoundingClientRect();
+    const [, , width, height] = viewBoxFor(record.viewport).split(" ").map(Number);
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    drag.x = event.clientX;
+    drag.y = event.clientY;
+    apply(panCanvasBy(record.viewport, rect.width ? -dx * width / rect.width : -dx, rect.height ? -dy * height / rect.height : -dy));
+  });
+  const stopDrag = (event) => {
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    root.releasePointerCapture?.(event.pointerId);
+    root.classList.remove("is-panning");
+    drag = null;
+  };
+  root.addEventListener("pointerup", stopDrag);
+  root.addEventListener("pointercancel", stopDrag);
+}
+
 export function renderGraph(container, { graph, run, onNodeSelect }) {
-  const root = svg("svg", { viewBox: "0 0 1400 800", preserveAspectRatio: "xMidYMid meet", role: "group", "aria-label": "Agent 架构与执行路径", "aria-describedby": "graph-keyboard-help" });
+  const canvasRecord = canvasRecordFor(container, graph, run);
+  const root = svg("svg", { viewBox: viewBoxFor(canvasRecord.viewport), preserveAspectRatio: "xMidYMid meet", role: "group", "aria-label": "Agent 架构与执行路径", "aria-describedby": "graph-keyboard-help" });
   root.classList.add("architecture-graph");
   const keyboardHelp = svg("desc", { id: "graph-keyboard-help" });
   keyboardHelp.textContent = "Tab 进入主图，方向键浏览节点，Enter 或空格查看详情。Tab into the graph, use Arrow keys to browse nodes, and Enter or Space to open details.";
@@ -545,4 +638,6 @@ export function renderGraph(container, { graph, run, onNodeSelect }) {
     legend.append(item);
   }
   container.replaceChildren(root, legend);
+  const applyCanvas = renderCanvasControls(container, root, canvasRecord);
+  bindCanvasGestures(root, canvasRecord, applyCanvas);
 }

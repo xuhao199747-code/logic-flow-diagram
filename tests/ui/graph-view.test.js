@@ -106,6 +106,34 @@ describe("GraphView", () => {
     expect(document.querySelectorAll("[data-module-id]")).toHaveLength(0);
   });
 
+  it("adds canvas zoom controls and preserves zoom while execution advances", () => {
+    const host = document.querySelector("#graph");
+    renderGraph(host, { graph: demoGraph, run: createRun(demoGraph), onNodeSelect: vi.fn() });
+
+    expect([...host.querySelectorAll(".canvas-controls button")].map((button) => button.dataset.canvasAction))
+      .toEqual(["zoom-out", "zoom-in", "fit"]);
+    expect(host.querySelector("[data-canvas-zoom]").textContent).toBe("100%");
+
+    host.querySelector('[data-canvas-action="zoom-in"]').click();
+    const zoomedViewBox = host.querySelector("svg").getAttribute("viewBox");
+    expect(zoomedViewBox).not.toBe("0 0 1400 800");
+    expect(host.querySelector("[data-canvas-zoom]").textContent).toBe("125%");
+
+    renderGraph(host, { graph: demoGraph, run: createRun(demoGraph, "orchestrator-event"), onNodeSelect: vi.fn() });
+    expect(host.querySelector("svg").getAttribute("viewBox")).toBe(zoomedViewBox);
+    expect(host.querySelector("[data-canvas-zoom]").textContent).toBe("125%");
+  });
+
+  it("fits the full diagram again from the canvas controls", () => {
+    const host = document.querySelector("#graph");
+    renderGraph(host, { graph: demoGraph, run: createRun(demoGraph), onNodeSelect: vi.fn() });
+    host.querySelector('[data-canvas-action="zoom-in"]').click();
+    host.querySelector('[data-canvas-action="fit"]').click();
+
+    expect(host.querySelector("svg").getAttribute("viewBox")).toBe("0 0 1400 800");
+    expect(host.querySelector("[data-canvas-zoom]").textContent).toBe("100%");
+  });
+
   it("separates macro routes from internal routes with a distinct module identity", () => {
     render({ run: createRun(demoGraph, "planning-event"), viewport: createViewport() });
 

@@ -91,4 +91,11 @@ describe("Cursor-style neutral interface", () => {
     expect(styles).toMatch(/@media\s*\(max-height:\s*800px\)[\s\S]*\.app-shell\s*\{[^}]*grid-template-rows:\s*54px\s+minmax\(0,\s*1fr\)\s+56px/s);
     expect(styles).toMatch(/@media\s*\(max-height:\s*800px\)[\s\S]*\.flow-explanation li\s*\{[^}]*padding:\s*6px\s+0/s);
   });
+
+  it("shows canvas controls over only the graph area and exposes grab feedback", () => {
+    expect(styles).toMatch(/\.canvas-controls\s*\{[^}]*position:\s*absolute/s);
+    expect(styles).toMatch(/\.canvas-controls\s*\{[^}]*right:\s*12px/s);
+    expect(styles).toMatch(/\.architecture-graph\.is-pannable\s*\{[^}]*cursor:\s*grab/s);
+    expect(styles).toMatch(/\.architecture-graph\.is-panning\s*\{[^}]*cursor:\s*grabbing/s);
+  });
 });
