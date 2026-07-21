@@ -45,7 +45,7 @@ function supportText(zh, en) {
   return `<span>${zh}</span><small>${en}</small>`;
 }
 
-export function createNodeDetail(graph, selection) {
+export function createNodeDetail(graph, selection, guides = null) {
   const item = selection.type === "executable"
     ? graph.nodes.find((node) => node.id === selection.id) ?? selection
     : graph.detailNodes.find((node) => node.id === selection.id) ?? selection;
@@ -64,7 +64,7 @@ export function createNodeDetail(graph, selection) {
     type: selection.type,
     label: item.label,
     parentLabel: parent?.label ?? { zh: "Agent 系统", en: "Agent System" },
-    description: nodeGuideFor(item.id)?.purpose ?? item.description ?? null,
+    description: guides?.nodeGuideFor?.(item.id)?.purpose ?? nodeGuideFor(item.id)?.purpose ?? item.description ?? null,
     detailSteps: item.detailSteps ?? [],
     incoming,
     outgoing,
@@ -76,12 +76,12 @@ function bilingualList(items) {
   return `<ul>${items.map((item) => `<li>${item.zh}<small>${item.en}</small></li>`).join("")}</ul>`;
 }
 
-function renderCurrentContent(container, { node, event, snapshot }) {
+function renderCurrentContent(container, { node, event, snapshot, guide: providedGuide }) {
   const issue = snapshot.issue;
   const issueLabel = issue?.label ?? issue;
   const requestAcknowledgement = issue?.requested ? `<p class="issue-ack">确认请求已发送<small>Confirmation requested</small></p>` : "";
   const issueBanner = issue ? `<section class="issue-banner" role="status"><span>模拟异常 · Simulated Issue</span><strong>${issueLabel.zh ?? issue.id}<small>${issueLabel.en ?? ""}</small></strong>${requestAcknowledgement}${issue.description ? `<p>${issue.description.zh}<small>${issue.description.en}</small></p>` : ""}${issue.impact ? `<p>影响：${issue.impact.zh}<small>Impact: ${issue.impact.en}</small></p>` : ""}</section>` : "";
-  const guide = eventGuideFor(event.id);
+  const guide = providedGuide ?? eventGuideFor(event.id);
   const now = guide?.now ?? {
     zh: `${node.label.zh}正在处理这一环节。`,
     en: `${node.label.en} is handling this stage.`,

@@ -19,7 +19,8 @@ function boundaryToward(bounds, target) {
 }
 
 export function contextGateProjection(graph) {
-  const tools = graph.groups.find((group) => group.id === "tools-group").bounds;
+  const tools = graph.groups.find((group) => group.id === "tools-group")?.bounds;
+  if (!tools) return null;
   return {
     id: "context-dependency-gate",
     groupId: "tools-group",
@@ -41,7 +42,7 @@ export function createRoutingContext(graph) {
   for (const detail of graph.detailNodes) register(detail.id, detail.bounds);
   for (const node of graph.nodes) register(node.id, node.referencePosition);
   const contextGate = contextGateProjection(graph);
-  register(contextGate.id, contextGate.bounds);
+  if (contextGate) register(contextGate.id, contextGate.bounds);
   register(graph.guardrails.id, graph.guardrails.bounds);
 
   return {

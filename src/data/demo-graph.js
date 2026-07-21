@@ -2,6 +2,10 @@ const label = (zh, en) => ({ zh, en });
 const bounds = (x, y, w, h) => ({ x, y, w, h });
 
 export const demoGraph = {
+  id: "agent-execution",
+  presentation: {
+    proxyExecutableIds: ["planning", "memory", "rag-route", "vector-search", "web-search", "rag-merge", "rag-context", "tool-select"],
+  },
   systemBoundary: {
     id: "agent-system",
     kind: "boundary",

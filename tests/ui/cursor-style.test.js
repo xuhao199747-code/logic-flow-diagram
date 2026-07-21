@@ -98,4 +98,10 @@ describe("Cursor-style neutral interface", () => {
     expect(styles).toMatch(/\.architecture-graph\.is-pannable\s*\{[^}]*cursor:\s*grab/s);
     expect(styles).toMatch(/\.architecture-graph\.is-panning\s*\{[^}]*cursor:\s*grabbing/s);
   });
+
+  it("lays out diagram and scenario selectors as one compact settings group", () => {
+    expect(styles).toMatch(/\.flow-settings\s*\{[^}]*display:\s*flex/s);
+    expect(styles).toMatch(/\.diagram-control\s*\{[^}]*display:\s*flex/s);
+    expect(styles).toMatch(/\.diagram-control select\s*\{[^}]*background:\s*var\(--panel\)/s);
+  });
 });

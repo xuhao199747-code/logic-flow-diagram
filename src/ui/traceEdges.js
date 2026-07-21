@@ -130,7 +130,7 @@ export function referenceVisualState(graph, run, id) {
     return { live: true, status: "running" };
   }
   const selectedBranches = run.selectedBranches ?? run.activeBranches ?? [];
-  const branch = graph.retrievalBranches.find((item) => item.detailNodeIds?.includes(id));
+  const branch = (graph.retrievalBranches ?? []).find((item) => item.detailNodeIds?.includes(id));
   if (branch) {
     if (selectedBranches.length && !selectedBranches.includes(branch.id)) return { skipped: true, status: "skipped" };
     if (run.completedBranches.includes(branch.id)) return { complete: true, status: "completed" };
@@ -186,7 +186,7 @@ export function referenceEdgeState(graph, run, topologyEdge) {
     return { ...meta, live: !complete, complete, relation: meta.presentationRelation ?? "parallel" };
   }
 
-  const legacyEdge = graph.edges.find((edge) => edge.id === meta.projectionId);
+  const legacyEdge = (graph.edges ?? []).find((edge) => edge.id === meta.projectionId);
   if (!legacyEdge) return meta;
 
   const currentEvent = graph.events.find((event) => event.id === run.currentEventId);

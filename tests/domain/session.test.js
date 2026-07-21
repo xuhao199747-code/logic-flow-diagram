@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { demoGraph } from "../../src/data/demo-graph.js";
 import { createRun, transition } from "../../src/domain/execution.js";
-import { SESSION_KEY, restoreSession, saveSession } from "../../src/domain/session.js";
+import { SESSION_KEY, restoreSession, saveSession, sessionKeyFor } from "../../src/domain/session.js";
 
 describe("run session persistence", () => {
   beforeEach(() => sessionStorage.clear());
@@ -29,6 +29,30 @@ describe("run session persistence", () => {
     const restored = restoreSession(sessionStorage, demoGraph);
 
     expect(restored.run.parallelWork).toEqual({ kind: "cognition", selected: ["planning", "memory"], completed: ["planning"] });
+  });
+
+  it("stores each diagram run under an independent session key", () => {
+    const first = transition(createRun(demoGraph), { type: "ADVANCE" });
+    const second = createRun(demoGraph, "rag-route");
+
+    saveSession(sessionStorage, { diagramId: "agent-execution", scenarioId: "normal", run: first });
+    saveSession(sessionStorage, { diagramId: "another-flow", scenarioId: "normal", run: second });
+
+    expect(sessionKeyFor("agent-execution")).not.toBe(sessionKeyFor("another-flow"));
+    expect(restoreSession(sessionStorage, demoGraph, "agent-execution").run.currentEventId).toBe("orchestrator-event");
+    expect(restoreSession(sessionStorage, demoGraph, "another-flow").run.currentEventId).toBe("rag-route");
+  });
+
+  it("restores each diagram canvas viewport with its run", () => {
+    const canvasViewport = { zoom: 1.5, x: 120, y: 80 };
+    saveSession(sessionStorage, {
+      diagramId: "agent-execution",
+      scenarioId: "normal",
+      run: createRun(demoGraph),
+      canvasViewport,
+    });
+
+    expect(restoreSession(sessionStorage, demoGraph, "agent-execution").canvasViewport).toEqual(canvasViewport);
   });
 
   it.each([

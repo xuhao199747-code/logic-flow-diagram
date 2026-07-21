@@ -1,22 +1,36 @@
 import "./styles.css";
-import { demoGraph } from "./data/demo-graph.js";
 import { createRun, transition } from "./domain/execution.js";
-import { restoreSession, saveSession } from "./domain/session.js";
+import {
+  restoreSelectedDiagram,
+  restoreSession,
+  saveSelectedDiagram,
+  saveSession,
+} from "./domain/session.js";
+import { diagramRegistry, getDiagram } from "./diagrams/registry.js";
 import { createAppView } from "./ui/AppView.js";
+import { createCanvasViewport } from "./ui/canvasViewport.js";
 
 const storage = (() => {
   try { return globalThis.sessionStorage; } catch { return null; }
 })();
-const restored = restoreSession(storage, demoGraph);
-const state = restored ? { graph: demoGraph, ...restored } : {
-  graph: demoGraph,
-  run: createRun(demoGraph),
+const initialDiagramId = restoreSelectedDiagram(storage, diagramRegistry);
+const initialDiagram = getDiagram(initialDiagramId) ?? diagramRegistry[0];
+const restored = restoreSession(storage, initialDiagram.graph, initialDiagram.id);
+const state = restored ? { diagrams: diagramRegistry, diagram: initialDiagram, diagramId: initialDiagram.id, graph: initialDiagram.graph, ...restored } : {
+  diagrams: diagramRegistry,
+  diagram: initialDiagram,
+  diagramId: initialDiagram.id,
+  graph: initialDiagram.graph,
+  run: createRun(initialDiagram.graph),
   scenarioId: "normal",
+  canvasViewport: createCanvasViewport(),
 };
+if (!state.canvasViewport) state.canvasViewport = createCanvasViewport();
 
 const render = () => {
   view.render(state);
   saveSession(storage, state);
+  saveSelectedDiagram(storage, state.diagramId);
 };
 const isTerminal = (status) => ["completed", "failed", "cancelled"].includes(status);
 
@@ -44,6 +58,24 @@ function advanceOne() {
 }
 
 const handlers = {
+  onCanvasViewportChange(canvasViewport) {
+    state.canvasViewport = canvasViewport;
+    saveSession(storage, state);
+  },
+  onDiagramChange(diagramId) {
+    if (diagramId === state.diagramId) return;
+    saveSession(storage, state);
+    const diagram = getDiagram(diagramId);
+    if (!diagram) return;
+    const session = restoreSession(storage, diagram.graph, diagram.id);
+    state.diagram = diagram;
+    state.diagramId = diagram.id;
+    state.graph = diagram.graph;
+    state.scenarioId = session?.scenarioId ?? "normal";
+    state.run = session?.run ?? createRun(diagram.graph);
+    state.canvasViewport = session?.canvasViewport ?? createCanvasViewport();
+    render();
+  },
   onBranchChoice(choice) {
     state.run = transition(state.run, { type: "CHOOSE_BRANCH", choice });
     render();
@@ -60,11 +92,13 @@ const handlers = {
   },
   onRestart() {
     state.run = transition(state.run, { type: "RESET" });
+    state.canvasViewport = createCanvasViewport();
     render();
   },
   onScenarioChange(scenarioId) {
     state.scenarioId = scenarioId;
     state.run = transition(state.run, { type: "RESET" });
+    state.canvasViewport = createCanvasViewport();
     render();
   },
   onRecovery(action) {

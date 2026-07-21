@@ -35,7 +35,6 @@ const relationLabels = {
   replan: "重规划 · Replan",
   decision: "决策 · Decision",
 };
-const visibleExecutableIds = new Set(["user-task", "orchestrator", "llm", "action", "observation", "final-response"]);
 const CONTEXT_GATE_ID = "context-dependency-gate";
 const detailEndpointAliases = new Map(Object.entries({
   "rag-route": ["rag-routing"],
@@ -307,8 +306,8 @@ function renderExecutableNode(node, state, isEndpoint, interaction) {
   const status = state.status;
   const showTextStatus = status && status !== "completed";
   const suffix = status ? ` · ${statusLabels[status] ?? status}` : "";
-  const proxy = !visibleExecutableIds.has(node.id);
-  const parentGroupId = ["core", "rag", "tools"].includes(node.moduleId) ? `${node.moduleId}-group` : null;
+  const proxy = interaction.proxyExecutableIds?.has(node.id) ?? false;
+  const parentGroupId = node.groupId ?? (["core", "rag", "tools"].includes(node.moduleId) ? `${node.moduleId}-group` : null);
   const group = svg("g", {
     "data-node-id": node.id,
     ...(parentGroupId ? { "data-parent-group-id": parentGroupId } : {}),
@@ -372,27 +371,31 @@ function relationEndpoints(graph, run, currentEvent) {
   return endpoints;
 }
 
-function canvasRecordFor(container, graph, run) {
+function canvasRecordFor(container, graph, run, initialViewport) {
   const initialEventId = graph.events[0]?.id;
-  const prior = canvasStates.get(container);
+  const records = canvasStates.get(container) ?? new Map();
+  const diagramId = graph.id ?? "default-diagram";
+  const prior = records.get(diagramId);
   const restarted = prior && run.currentEventId === initialEventId && prior.lastEventId !== initialEventId;
   const record = !prior || restarted
-    ? { viewport: createCanvasViewport(), lastEventId: run.currentEventId }
+    ? { viewport: !prior && initialViewport ? initialViewport : createCanvasViewport(), lastEventId: run.currentEventId }
     : { ...prior, lastEventId: run.currentEventId };
-  canvasStates.set(container, record);
+  records.set(diagramId, record);
+  canvasStates.set(container, records);
   return record;
 }
 
-function renderCanvasControls(container, root, record) {
+function renderCanvasControls(container, root, record, onCanvasViewportChange) {
   const controls = document.createElement("div");
   controls.className = "canvas-controls";
   controls.setAttribute("aria-label", "画布缩放 Canvas zoom");
   controls.innerHTML = `<button type="button" data-canvas-action="zoom-out" aria-label="缩小 Zoom out">−</button><output data-canvas-zoom aria-label="当前缩放 Current zoom"></output><button type="button" data-canvas-action="zoom-in" aria-label="放大 Zoom in">+</button><button type="button" data-canvas-action="fit" aria-label="适应屏幕 Fit to screen">适应<small>Fit</small></button>`;
 
-  const apply = (next) => {
+  const apply = (next, notify = true) => {
     record.viewport = next;
     root.setAttribute("viewBox", viewBoxFor(next));
     controls.querySelector("[data-canvas-zoom]").textContent = `${Math.round(next.zoom * 100)}%`;
+    if (notify) onCanvasViewportChange?.(next);
   };
   const center = () => {
     const [x, y, width, height] = viewBoxFor(record.viewport).split(" ").map(Number);
@@ -402,7 +405,7 @@ function renderCanvasControls(container, root, record) {
   controls.querySelector('[data-canvas-action="zoom-out"]').onclick = () => apply(zoomCanvasAt(record.viewport, record.viewport.zoom / 1.25, center()));
   controls.querySelector('[data-canvas-action="zoom-in"]').onclick = () => apply(zoomCanvasAt(record.viewport, record.viewport.zoom * 1.25, center()));
   controls.querySelector('[data-canvas-action="fit"]').onclick = () => apply(createCanvasViewport());
-  apply(record.viewport);
+  apply(record.viewport, false);
   container.append(controls);
   return apply;
 }
@@ -456,8 +459,8 @@ function bindCanvasGestures(root, record, apply) {
   root.addEventListener("pointercancel", stopDrag);
 }
 
-export function renderGraph(container, { graph, run, onNodeSelect }) {
-  const canvasRecord = canvasRecordFor(container, graph, run);
+export function renderGraph(container, { graph, run, onNodeSelect, canvasViewport, onCanvasViewportChange }) {
+  const canvasRecord = canvasRecordFor(container, graph, run, canvasViewport);
   const root = svg("svg", { viewBox: viewBoxFor(canvasRecord.viewport), preserveAspectRatio: "xMidYMid meet", role: "group", "aria-label": "Agent 架构与执行路径", "aria-describedby": "graph-keyboard-help" });
   root.classList.add("architecture-graph");
   const keyboardHelp = svg("desc", { id: "graph-keyboard-help" });
@@ -524,7 +527,7 @@ export function renderGraph(container, { graph, run, onNodeSelect }) {
     if (state.live) pulsesLayer.append(edgePulse({ key, edgeId: meta.edgeId, pathData: route.d, start: route.start, presentation: flowPresentation }));
   }
 
-  const retryEdge = graph.edges.find((edge) => edge.id === "e18");
+  const retryEdge = (graph.edges ?? []).find((edge) => edge.id === "e18");
   if (retryEdge) {
     const selectedBranches = run.selectedBranches ?? run.activeBranches ?? [];
     const completedEdgeIds = completedEdgeIdsForTrace(graph, run.trace);
@@ -561,8 +564,8 @@ export function renderGraph(container, { graph, run, onNodeSelect }) {
     { key: "context-dependency-gate->code-execution-sandbox", from: CONTEXT_GATE_ID, to: "code-execution-sandbox", tool: "sandbox", label: "沙箱分支 · Sandbox" },
     { key: "context-dependency-gate->external-environment-business-system", from: CONTEXT_GATE_ID, to: "external-environment-business-system", tool: "external", label: "外部系统 · External" },
   ];
-  const gateState = contextGateState(run);
-  for (const dependency of dependencyRoutes) {
+  const gateState = contextGate ? contextGateState(run) : null;
+  for (const dependency of contextGate ? dependencyRoutes : []) {
     const route = routeTopologyEdge(dependency, routingContext);
     const flowPresentation = flowPresentationForConnection(dependency.from, dependency.to);
     const path = svg("path", {
@@ -596,16 +599,19 @@ export function renderGraph(container, { graph, run, onNodeSelect }) {
     applyFlowIdentity(rendered, { module: flowModuleForDetail(detail) });
     nodesLayer.append(rendered);
   }
-  const renderedGate = renderDetailNode(contextGate, gateState, false, { root, onNodeSelect });
-  renderedGate.dataset.layoutSource = "tools-group";
-  applyFlowIdentity(renderedGate, { module: flowModuleForDetail(contextGate) });
-  renderedGate.classList.add("context-gate");
-  if (gateState.waiting) renderedGate.classList.add("is-waiting");
-  if (gateState.ready) renderedGate.classList.add("is-ready");
-  if (gateState.independent) renderedGate.classList.add("is-independent");
-  nodesLayer.append(renderedGate);
+  if (contextGate) {
+    const renderedGate = renderDetailNode(contextGate, gateState, false, { root, onNodeSelect });
+    renderedGate.dataset.layoutSource = "tools-group";
+    applyFlowIdentity(renderedGate, { module: flowModuleForDetail(contextGate) });
+    renderedGate.classList.add("context-gate");
+    if (gateState.waiting) renderedGate.classList.add("is-waiting");
+    if (gateState.ready) renderedGate.classList.add("is-ready");
+    if (gateState.independent) renderedGate.classList.add("is-independent");
+    nodesLayer.append(renderedGate);
+  }
+  const proxyExecutableIds = new Set(graph.presentation?.proxyExecutableIds ?? []);
   for (const node of graph.nodes) {
-    const rendered = renderExecutableNode(node, referenceVisualState(graph, run, node.id), endpoints.has(node.id), { root, onNodeSelect });
+    const rendered = renderExecutableNode(node, referenceVisualState(graph, run, node.id), endpoints.has(node.id), { root, onNodeSelect, proxyExecutableIds });
     applyFlowIdentity(rendered, { module: flowModuleForNode(node.id) });
     nodesLayer.append(rendered);
   }
@@ -638,6 +644,6 @@ export function renderGraph(container, { graph, run, onNodeSelect }) {
     legend.append(item);
   }
   container.replaceChildren(root, legend);
-  const applyCanvas = renderCanvasControls(container, root, canvasRecord);
+  const applyCanvas = renderCanvasControls(container, root, canvasRecord, onCanvasViewportChange);
   bindCanvasGestures(root, canvasRecord, applyCanvas);
 }

@@ -134,6 +134,62 @@ describe("GraphView", () => {
     expect(host.querySelector("[data-canvas-zoom]").textContent).toBe("100%");
   });
 
+  it("keeps a separate canvas viewport for each diagram id", () => {
+    const host = document.querySelector("#graph");
+    const firstGraph = { ...demoGraph, id: "first-flow" };
+    const secondGraph = { ...demoGraph, id: "second-flow" };
+
+    renderGraph(host, { graph: firstGraph, run: createRun(firstGraph), onNodeSelect: vi.fn() });
+    host.querySelector('[data-canvas-action="zoom-in"]').click();
+    expect(host.querySelector("[data-canvas-zoom]").textContent).toBe("125%");
+
+    renderGraph(host, { graph: secondGraph, run: createRun(secondGraph), onNodeSelect: vi.fn() });
+    expect(host.querySelector("[data-canvas-zoom]").textContent).toBe("100%");
+
+    renderGraph(host, { graph: firstGraph, run: createRun(firstGraph, "orchestrator-event"), onNodeSelect: vi.fn() });
+    expect(host.querySelector("[data-canvas-zoom]").textContent).toBe("125%");
+  });
+
+  it("starts a diagram from its restored canvas viewport", () => {
+    const host = document.querySelector("#graph");
+    renderGraph(host, {
+      graph: { ...demoGraph, id: "restored-flow" },
+      run: createRun(demoGraph),
+      canvasViewport: { zoom: 1.5, x: 120, y: 80 },
+      onNodeSelect: vi.fn(),
+    });
+
+    expect(host.querySelector("[data-canvas-zoom]").textContent).toBe("150%");
+    expect(host.querySelector("svg").getAttribute("viewBox")).toBe("120 80 933.333 533.333");
+  });
+
+  it("renders a generic configured flow without Agent-specific node ids or tool extensions", () => {
+    const label = (zh, en) => ({ zh, en });
+    const graph = {
+      id: "generic-flow",
+      systemBoundary: { id: "flow", label: label("通用流程", "Generic Flow"), bounds: { x: 0, y: 0, w: 1400, h: 800 } },
+      groups: [],
+      detailNodes: [],
+      nodes: [
+        { id: "start", moduleId: "main", label: label("开始", "Start"), kind: "step", referencePosition: { x: 220, y: 300, w: 180, h: 55 } },
+        { id: "finish", moduleId: "main", label: label("结束", "Finish"), kind: "step", referencePosition: { x: 900, y: 300, w: 180, h: 55 } },
+      ],
+      topologyEdges: [{ from: "start", to: "finish" }],
+      edges: [],
+      events: [
+        { id: "start-event", nodeId: "start", label: label("开始流程", "Start Flow"), relation: "sequence", next: "finish-event" },
+        { id: "finish-event", nodeId: "finish", label: label("结束流程", "Finish Flow"), relation: "sequence", next: null },
+      ],
+      scenarios: [{ id: "normal", label: label("正常", "Normal"), description: label("正常流程", "Normal flow") }],
+      guardrails: { id: "guardrails", label: label("约束", "Guardrails"), bounds: { x: 40, y: 730, w: 1320, h: 50 } },
+    };
+
+    expect(() => renderGraph(document.querySelector("#graph"), { graph, run: createRun(graph), onNodeSelect: vi.fn() })).not.toThrow();
+    expect(document.querySelector('[data-node-id="start"] rect')).not.toBeNull();
+    expect(document.querySelector('[data-node-id="finish"] rect')).not.toBeNull();
+    expect(document.querySelector(".context-gate")).toBeNull();
+  });
+
   it("separates macro routes from internal routes with a distinct module identity", () => {
     render({ run: createRun(demoGraph, "planning-event"), viewport: createViewport() });
 

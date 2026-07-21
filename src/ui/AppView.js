@@ -3,12 +3,15 @@ import { createNodeDetail, renderContextRail } from "./Inspector.js";
 import { renderPlaybackControls } from "./PlaybackControls.js";
 
 export function createAppView(root, handlers) {
-  root.innerHTML = `<section class="app-shell"><p class="sr-only" data-testid="run-announcement" aria-live="polite" aria-atomic="true"></p><header class="topbar"><div class="title-lockup"><span class="eyebrow">AGENT EXECUTION MAP</span><h1 data-lang="zh">智能代理执行流程</h1><p class="foundation-screen__support" data-lang="en">Interactive Agent Flow</p></div><div class="scenario-block"><div class="scenario-row"><label class="scenario-control">模拟场景 <small>Simulation</small><select data-action="scenario" aria-label="模拟场景 Simulation"></select></label><span class="scenario-status" data-scenario-status></span></div><p data-scenario-summary></p></div><nav data-testid="breadcrumb" aria-label="当前步骤 Current step"></nav></header><main class="flow-stage"><div class="graph-host"></div><aside class="step-rail" aria-label="当前步骤说明 Current step details"></aside></main><footer class="controls-host"></footer></section>`;
+  root.innerHTML = `<section class="app-shell"><p class="sr-only" data-testid="run-announcement" aria-live="polite" aria-atomic="true"></p><header class="topbar"><div class="title-lockup"><span class="eyebrow">INTERACTIVE FLOW MAP</span><h1 data-lang="zh" data-diagram-title>智能代理执行流程</h1><p class="foundation-screen__support" data-lang="en" data-diagram-title-en>Interactive Agent Flow</p></div><div class="flow-settings"><label class="diagram-control">流程图 <small>Diagram</small><select data-action="diagram" aria-label="流程图 Diagram"></select></label><div class="scenario-block"><div class="scenario-row"><label class="scenario-control">模拟场景 <small>Simulation</small><select data-action="scenario" aria-label="模拟场景 Simulation"></select></label><span class="scenario-status" data-scenario-status></span></div><p data-scenario-summary></p></div></div><nav data-testid="breadcrumb" aria-label="当前步骤 Current step"></nav></header><main class="flow-stage"><div class="graph-host"></div><aside class="step-rail" aria-label="当前步骤说明 Current step details"></aside></main><footer class="controls-host"></footer></section>`;
 
   const graphHost = root.querySelector(".graph-host");
   const stepRail = root.querySelector(".step-rail");
   const breadcrumb = root.querySelector('[data-testid="breadcrumb"]');
   const controls = root.querySelector(".controls-host");
+  const diagramSelect = root.querySelector('[data-action="diagram"]');
+  const diagramTitle = root.querySelector("[data-diagram-title]");
+  const diagramTitleEn = root.querySelector("[data-diagram-title-en]");
   const scenario = root.querySelector('[data-action="scenario"]');
   const scenarioStatus = root.querySelector("[data-scenario-status]");
   const scenarioSummary = root.querySelector("[data-scenario-summary]");
@@ -17,6 +20,7 @@ export function createAppView(root, handlers) {
   let inspectedNode = null;
   let currentRailModel = null;
   let currentGraph = null;
+  let currentDiagram = null;
   let lastCursorKey = null;
 
   const renderRail = () => {
@@ -32,7 +36,7 @@ export function createAppView(root, handlers) {
   };
 
   const inspectNode = (selection) => {
-    inspectedNode = createNodeDetail(currentGraph, selection);
+    inspectedNode = createNodeDetail(currentGraph, selection, currentDiagram?.guides);
     activeRailTab = "node";
     handlers.onNodeSelect?.(selection);
     renderRail();
@@ -40,6 +44,15 @@ export function createAppView(root, handlers) {
 
   return {
     render(state) {
+      const availableDiagrams = state.diagrams?.length
+        ? state.diagrams
+        : [state.diagram ?? { id: state.diagramId ?? state.graph.id ?? "current-diagram", label: { zh: "智能代理执行流程", en: "Interactive Agent Flow" }, graph: state.graph }];
+      const activeDiagram = state.diagram ?? availableDiagrams.find((item) => item.id === state.diagramId) ?? availableDiagrams[0];
+      diagramSelect.replaceChildren(...availableDiagrams.map((item) => new Option(`${item.label.zh} · ${item.label.en}`, item.id)));
+      diagramSelect.value = activeDiagram.id;
+      diagramSelect.onchange = (event) => handlers.onDiagramChange?.(event.target.value);
+      diagramTitle.textContent = activeDiagram.label.zh;
+      diagramTitleEn.textContent = activeDiagram.label.en;
       scenario.replaceChildren(...state.graph.scenarios.map((item) => new Option(`${item.label.zh} · ${item.label.en}`, item.id)));
       scenario.value = state.scenarioId ?? "normal";
       scenario.onchange = (event) => handlers.onScenarioChange?.(event.target.value);
@@ -52,7 +65,7 @@ export function createAppView(root, handlers) {
       const currentEvent = state.graph.events.find((item) => item.id === state.run.currentEventId);
       const currentNode = state.graph.nodes.find((item) => item.id === currentEvent.nodeId);
       const currentModule = state.graph.modules.find((item) => item.id === currentNode.moduleId);
-      breadcrumb.textContent = ["Agent 系统", currentModule.label.zh, currentNode.label.zh]
+      breadcrumb.textContent = [state.graph.systemBoundary.label.zh, currentModule.label.zh, currentNode.label.zh]
         .filter((label, index, labels) => index === 0 || label !== labels[index - 1])
         .join(" > ");
       runAnnouncement.textContent = `${currentEvent.label.zh} · ${currentEvent.label.en}，${state.run.status}`;
@@ -84,9 +97,11 @@ export function createAppView(root, handlers) {
               en: "The flow completes here.",
             };
       currentGraph = state.graph;
+      currentDiagram = activeDiagram;
       currentRailModel = {
         node: currentNode,
         event: currentEvent,
+        guide: activeDiagram.guides?.eventGuideFor?.(currentEvent.id) ?? null,
         snapshot: {
           status: state.run.status,
           input: currentEvent.label.zh,
@@ -99,7 +114,7 @@ export function createAppView(root, handlers) {
         },
       };
 
-      renderGraph(graphHost, { ...state, onNodeSelect: inspectNode });
+      renderGraph(graphHost, { ...state, onNodeSelect: inspectNode, onCanvasViewportChange: handlers.onCanvasViewportChange });
       renderRail();
       renderPlaybackControls(controls, {
         run: state.run,

@@ -76,6 +76,58 @@ describe("AppView", () => {
     expect(document.querySelector("[data-testid=breadcrumb]").textContent).toContain("RAG 检索增强");
   });
 
+  it("renders a top-level diagram selector and requests a diagram switch", () => {
+    const onDiagramChange = vi.fn();
+    const view = createAppView(document.querySelector("#app"), { ...handlers(), onDiagramChange });
+    const diagrams = [
+      { id: "agent-execution", label: { zh: "智能代理执行流程", en: "Interactive Agent Flow" }, graph: demoGraph },
+      { id: "other-flow", label: { zh: "另一流程", en: "Other Flow" }, graph: demoGraph },
+    ];
+    view.render({ graph: demoGraph, diagramId: "agent-execution", diagrams, run: createRun(demoGraph), viewport: createViewport() });
+
+    const select = document.querySelector('[data-action="diagram"]');
+    expect([...select.options].map((option) => option.value)).toEqual(["agent-execution", "other-flow"]);
+    select.value = "other-flow";
+    select.dispatchEvent(new Event("change"));
+    expect(onDiagramChange).toHaveBeenCalledWith("other-flow");
+  });
+
+  it("uses the active diagram package for flow and node explanations", () => {
+    const view = createAppView(document.querySelector("#app"), handlers());
+    const diagram = {
+      id: "custom",
+      label: { zh: "自定义", en: "Custom" },
+      graph: demoGraph,
+      guides: {
+        eventGuideFor: () => ({
+          now: { zh: "当前图专属步骤说明", en: "Diagram-specific live explanation" },
+          reason: { zh: "当前图专属原因", en: "Diagram-specific reason" },
+          result: { zh: "当前图专属结果", en: "Diagram-specific result" },
+        }),
+        nodeGuideFor: () => ({ purpose: { zh: "当前图专属节点作用", en: "Diagram-specific node purpose" } }),
+      },
+    };
+    view.render({ graph: demoGraph, diagram, diagramId: "custom", diagrams: [diagram], run: createRun(demoGraph), viewport: createViewport() });
+    expect(document.querySelector(".step-rail").textContent).toContain("当前图专属步骤说明");
+
+    document.querySelector('[data-node-id="llm"]').dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(document.querySelector(".node-role").textContent).toContain("当前图专属节点作用");
+  });
+
+  it("uses the active graph boundary name instead of a hard-coded Agent breadcrumb", () => {
+    const graph = {
+      ...demoGraph,
+      id: "business-flow",
+      systemBoundary: { ...demoGraph.systemBoundary, label: { zh: "业务流程", en: "Business Flow" } },
+    };
+    const diagram = { id: graph.id, label: graph.systemBoundary.label, graph };
+    const view = createAppView(document.querySelector("#app"), handlers());
+    view.render({ graph, diagram, diagrams: [diagram], diagramId: diagram.id, run: createRun(graph), viewport: createViewport() });
+
+    expect(document.querySelector('[data-testid="breadcrumb"]').textContent).toContain("业务流程");
+    expect(document.querySelector('[data-testid="breadcrumb"]').textContent).not.toContain("Agent 系统");
+  });
+
   it("removes adjacent duplicate labels from the current-step breadcrumb", () => {
     const view = createAppView(document.querySelector("#app"), handlers());
     view.render({ graph: demoGraph, run: createRun(demoGraph, "final-event"), viewport: createViewport() });
