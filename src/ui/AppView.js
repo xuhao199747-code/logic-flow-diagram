@@ -129,6 +129,9 @@ export function createAppView(root, handlers) {
         eventNumber: state.graph.events.indexOf(currentEvent) + 1,
         eventCount: state.graph.events.length,
       }, handlers);
+      const canvasControls = graphHost.querySelector(".canvas-controls");
+      const historyControls = controls.querySelector(".control-history");
+      if (canvasControls && historyControls) historyControls.prepend(canvasControls);
     },
   };
 }

@@ -185,6 +185,8 @@ describe("final review regressions", () => {
 
     expect(document.querySelectorAll("[data-branch-choice]")).toHaveLength(0);
     expect(document.querySelectorAll('[data-action="recovery"]')).toHaveLength(3);
+    expect(document.querySelector(".issue-banner").textContent).toContain("评估不通过");
+    expect(document.querySelector(".issue-banner").textContent).not.toContain("观察评分不足，需要重试或重新规划");
   });
 
   it("keeps recovery controls beside a fixed rail without spatial-navigation UI", () => {

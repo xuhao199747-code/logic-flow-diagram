@@ -305,6 +305,17 @@ describe("AppView", () => {
     expect(document.querySelector("[data-testid=branch-progress]")).toBeNull();
   });
 
+  it("places canvas zoom beside the left controls on the same bottom row as the event action", () => {
+    const view = createAppView(document.querySelector("#app"), handlers());
+    view.render({ graph: demoGraph, run: createRun(demoGraph), viewport: createViewport() });
+
+    const history = document.querySelector(".control-history");
+    const zoom = document.querySelector(".canvas-controls");
+    expect(zoom.parentElement).toBe(history);
+    expect(history.firstElementChild).toBe(zoom);
+    expect(document.querySelector(".control-actions").parentElement).toBe(history.parentElement);
+  });
+
   it("replaces next with branch choices at a decision", () => {
     const onBranchChoice = vi.fn();
     const view = createAppView(document.querySelector("#app"), {

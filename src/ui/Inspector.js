@@ -80,7 +80,7 @@ function renderCurrentContent(container, { node, event, snapshot, guide: provide
   const issue = snapshot.issue;
   const issueLabel = issue?.label ?? issue;
   const requestAcknowledgement = issue?.requested ? `<p class="issue-ack">确认请求已发送</p>` : "";
-  const issueBanner = issue ? `<section class="issue-banner" role="status"><span>模拟异常</span><strong>${issueLabel.zh ?? issue.id}</strong>${requestAcknowledgement}${issue.description ? `<p>${issue.description.zh}</p>` : ""}${issue.impact ? `<p>影响：${issue.impact.zh}</p>` : ""}</section>` : "";
+  const issueBanner = issue ? `<section class="issue-banner" role="status"><span>模拟异常</span><strong>${issueLabel.zh ?? issue.id}</strong>${requestAcknowledgement}${issue.description?.zh ? `<p>${issue.description.zh}</p>` : ""}${issue.impact ? `<p>影响：${issue.impact.zh}</p>` : ""}</section>` : "";
   const guide = providedGuide ?? eventGuideFor(event.id);
   const now = guide?.now ?? {
     zh: `${node.label.zh}正在处理这一环节。`,

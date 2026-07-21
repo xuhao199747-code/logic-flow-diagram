@@ -904,6 +904,31 @@ body {
   cursor: pointer;
 }
 
+.control-history .canvas-controls {
+  position: static;
+  right: auto;
+  bottom: auto;
+  z-index: auto;
+  flex: 0 0 auto;
+  box-shadow: none;
+}
+
+.playback .canvas-controls button {
+  min-width: 29px;
+  height: 29px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  padding: 0 8px;
+  background: transparent;
+  font-size: .75rem;
+}
+
+.playback .canvas-controls button:last-child {
+  border-right: 0;
+  border-left: 1px solid var(--line);
+}
+
 .playback button:disabled {
   cursor: not-allowed;
   opacity: .35;

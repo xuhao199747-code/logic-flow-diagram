@@ -95,7 +95,7 @@ describe("Cursor-style neutral interface", () => {
 
   it("shows canvas controls over only the graph area and exposes grab feedback", () => {
     expect(styles).toMatch(/\.canvas-controls\s*\{[^}]*position:\s*absolute/s);
-    expect(styles).toMatch(/\.canvas-controls\s*\{[^}]*right:\s*12px/s);
+    expect(styles).toMatch(/\.control-history \.canvas-controls\s*\{[^}]*position:\s*static/s);
     expect(styles).toMatch(/\.architecture-graph\.is-pannable\s*\{[^}]*cursor:\s*grab/s);
     expect(styles).toMatch(/\.architecture-graph\.is-panning\s*\{[^}]*cursor:\s*grabbing/s);
   });
