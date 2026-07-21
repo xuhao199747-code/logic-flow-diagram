@@ -95,6 +95,7 @@ export function createAppView(root, handlers) {
           iteration: state.run.iteration,
           issue: state.run.simulatedIssue,
           next,
+          run: state.run,
         },
       };
 

@@ -203,11 +203,43 @@ body {
 }
 
 .graph-host {
+  position: relative;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
   background: var(--bg);
 }
+
+.flow-legend {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  display: flex;
+  gap: 9px;
+  margin: 0;
+  padding: 5px 7px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  list-style: none;
+  backdrop-filter: blur(6px);
+}
+
+.flow-legend li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: .55rem;
+}
+
+.flow-legend small { display: none; }
+.flow-legend i { width: 15px; border-top: 2px solid var(--route); }
+.flow-legend [data-legend-state="live"] i { border-color: var(--live); }
+.flow-legend [data-legend-state="complete"] i { border-color: var(--done); }
+.flow-legend [data-legend-state="callback"] i { border-top-style: dashed; }
+.flow-legend [data-legend-state="issue"] i { border-color: var(--warn); border-top-style: dashed; }
 
 .architecture-graph {
   display: block;
@@ -621,6 +653,25 @@ body {
   font-size: .54rem;
 }
 
+.inspection-context {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.inspection-context p {
+  margin: 0;
+  color: var(--text);
+  font-size: .61rem;
+}
+
+.inspection-context small {
+  display: block;
+  margin-top: 1px;
+  color: var(--muted);
+  font-size: .54rem;
+}
+
 .node-role,
 .node-module {
   margin-top: 10px;
@@ -817,6 +868,11 @@ body {
   white-space: nowrap;
 }
 
+[data-testid="branch-progress"] small {
+  display: block;
+  font-size: .58rem;
+}
+
 [data-testid="branch-progress"] {
   max-width: 290px;
   overflow: hidden;
@@ -910,6 +966,25 @@ body {
   stroke-width: 1.5;
   vector-effect: non-scaling-stroke;
   pointer-events: none;
+}
+
+@media (max-height: 800px) {
+  .app-shell { grid-template-rows: 54px minmax(0, 1fr) 56px; }
+  .topbar { padding: 6px 16px; }
+  .title-lockup h1 { font-size: .95rem; }
+  .step-rail { padding: 9px 12px; }
+  .guide-header { padding-bottom: 6px; }
+  .flow-explanation li { padding: 6px 0; }
+  .flow-explanation p,
+  .node-role p,
+  .node-module p { font-size: .63rem; line-height: 1.28; }
+  .flow-explanation p small,
+  .node-role p small,
+  .node-module p small { font-size: .54rem; }
+  .node-role,
+  .node-module { margin-top: 7px; padding: 7px 8px; }
+  .node-connections { margin-top: 9px; padding-top: 8px; }
+  .controls-host { padding-block: 5px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

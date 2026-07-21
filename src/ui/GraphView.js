@@ -17,7 +17,7 @@ import {
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const statusLabels = {
-  waiting: "等待 · Waiting", paused: "暂停 · Paused", running: "执行中 · Running", success: "成功 · Success",
+  waiting: "等待 · Waiting", paused: "等待操作 · Awaiting Action", running: "执行中 · Running", success: "成功 · Success",
   completed: "完成 · Completed", failed: "失败 · Failed", skipped: "跳过 · Skipped", blocked: "已阻塞 · Blocked",
   retrying: "重试中 · Retrying", cancelled: "已取消 · Cancelled", partial: "部分完成 · Partial",
 };
@@ -530,5 +530,19 @@ export function renderGraph(container, { graph, run, onNodeSelect }) {
   guardrails.querySelector(".group-en").remove();
   guardrailsLayer.append(guardrails);
 
-  container.replaceChildren(root);
+  const legend = document.createElement("ul");
+  legend.className = "flow-legend";
+  legend.setAttribute("aria-label", "线路状态图例 Route status legend");
+  for (const [state, zh, en] of [
+    ["live", "运行中", "Running"],
+    ["complete", "已完成", "Completed"],
+    ["callback", "回传", "Callback"],
+    ["issue", "异常/重试", "Issue / Retry"],
+  ]) {
+    const item = document.createElement("li");
+    item.dataset.legendState = state;
+    item.innerHTML = `<i aria-hidden="true"></i><span>${zh}<small>${en}</small></span>`;
+    legend.append(item);
+  }
+  container.replaceChildren(root, legend);
 }

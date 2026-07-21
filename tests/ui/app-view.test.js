@@ -107,8 +107,20 @@ describe("AppView", () => {
     expect(announcement.getAttribute("aria-live")).toBe("polite");
     expect(announcement.textContent).toContain("接收用户任务");
     expect(announcement.textContent).toContain("Receive Task");
-    expect(document.querySelector(".status-chip").textContent).toContain("已暂停");
-    expect(document.querySelector(".status-chip").textContent).toContain("Paused");
+    expect(document.querySelector(".status-chip").textContent).toContain("等待操作");
+    expect(document.querySelector(".status-chip").textContent).toContain("Awaiting Action");
+  });
+
+  it("shows a compact four-state route legend over the graph", () => {
+    const view = createAppView(document.querySelector("#app"), handlers());
+    view.render({ graph: demoGraph, run: createRun(demoGraph), viewport: createViewport() });
+
+    const legend = document.querySelector(".flow-legend");
+    expect(legend).not.toBeNull();
+    expect([...legend.querySelectorAll("li")].map((item) => item.dataset.legendState))
+      .toEqual(["live", "complete", "callback", "issue"]);
+    expect(legend.textContent).toContain("运行中");
+    expect(legend.textContent).toContain("异常/重试");
   });
 
   it("returns from a selected node explanation to the live flow", () => {
@@ -124,6 +136,18 @@ describe("AppView", () => {
 
     expect(document.querySelector(".step-rail").textContent).toContain("运行进度");
     expect(document.querySelector('[data-action="back-to-live"]')).toBeNull();
+  });
+
+  it("distinguishes the running step from the node being inspected", () => {
+    const view = createAppView(document.querySelector("#app"), handlers());
+    view.render({ graph: demoGraph, run: createRun(demoGraph, "rag-route"), viewport: createViewport() });
+
+    document.querySelector('[data-detail-node-id="memory-long-term"]').dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    const context = document.querySelector(".inspection-context");
+    expect(context.textContent).toContain("当前运行：选择检索路径");
+    expect(context.textContent).toContain("正在查看：长期记忆");
+    expect(context.textContent).toContain("Running");
+    expect(context.textContent).toContain("Viewing");
   });
 
   it("opens clicked graph content in Node Detail without changing the execution cursor", () => {
@@ -383,7 +407,7 @@ describe("AppView", () => {
 
     const progress = document.querySelector("[data-testid=branch-progress]").textContent;
     expect(progress).toContain("主泳道 1 / 2");
-    expect(progress).toContain("检索分支 0 / 0");
+    expect(progress).not.toContain("检索分支 0 / 0");
   });
 
   it("preserves branch progress after a parallel join completes", () => {

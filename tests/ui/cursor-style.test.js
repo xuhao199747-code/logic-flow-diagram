@@ -85,4 +85,10 @@ describe("Cursor-style neutral interface", () => {
     expect(styles).toMatch(/\.flow-explanation\s*\{[^}]*display:\s*grid/s);
     expect(styles).toMatch(/\.back-to-live\s*\{[^}]*cursor:\s*pointer/s);
   });
+
+  it("compacts the fixed shell and bilingual rail for short desktop screens", () => {
+    expect(styles).toMatch(/@media\s*\(max-height:\s*800px\)/);
+    expect(styles).toMatch(/@media\s*\(max-height:\s*800px\)[\s\S]*\.app-shell\s*\{[^}]*grid-template-rows:\s*54px\s+minmax\(0,\s*1fr\)\s+56px/s);
+    expect(styles).toMatch(/@media\s*\(max-height:\s*800px\)[\s\S]*\.flow-explanation li\s*\{[^}]*padding:\s*6px\s+0/s);
+  });
 });
